@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Approval Workflow — Power Apps UI Draft</title>
+<style>
+  /* ============================================================
+     DESIGN TOKENS — every value here maps to a Power Apps property
+     (Fill, Color, BorderColor, BorderRadius, Font, Size).
+     Font: Segoe UI (available natively in Power Apps).
+     No gradients, no blurs, no box-shadows beyond what modern
+     controls support — flat fills + 1px borders only.
+     ============================================================ */
+  :root{
+    --primary:#2563EB;        /* RGBA(37,99,235,1)   */
+    --primary-dark:#1D4ED8;   /* pressed/hover fill  */
+    --primary-soft:#EFF4FE;   /* selected row fill   */
+    --accent:#059669;         /* approve green       */
+    --accent-soft:#E6F4EF;
+    --danger:#DC2626;         /* reject red          */
+    --danger-soft:#FBEAEA;
+    --warn:#B45309;           /* pending amber text  */
+    --warn-soft:#FDF3E3;
+    --bg:#F8FAFC;             /* screen Fill         */
+    --surface:#FFFFFF;        /* card Fill           */
+    --fg:#0F172A;             /* main text           */
+    --fg-2:#475569;           /* secondary text      */
+    --fg-3:#94A3B8;           /* hint text           */
+    --border:#E2E8F0;         /* card BorderColor    */
+    --radius:8px;             /* rectangle BorderRadius */
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{font-size:16px;}
+  body{
+    font-family:"Segoe UI", Segoe UI, -apple-system, sans-serif;
+    background:#EDF1F7; color:var(--fg); line-height:1.5;
+    padding:24px 16px 64px;
+  }
+
+  /* ---- draft chrome (viewer only, not part of the app) ---- */
+  .draft-header{max-width:1366px;margin:0 auto 16px;}
+  .draft-header h1{font-size:1.25rem;font-weight:600;}
+  .draft-header p{color:var(--fg-2);font-size:.875rem;}
+  .tabs{max-width:1366px;margin:0 auto 20px;display:flex;gap:8px;flex-wrap:wrap;}
+  .tabs button{
+    font:inherit;font-size:.875rem;font-weight:600;color:var(--fg-2);
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:20px;padding:9px 18px;cursor:pointer;transition:all .2s;
+  }
+  .tabs button:hover{border-color:var(--primary);color:var(--primary);}
+  .tabs button.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .tabs button:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+  .screen{display:none;max-width:1366px;margin:0 auto;}
+  .screen.active{display:block;}
+  .build-note{
+    max-width:1366px;margin:12px auto 0;font-size:.78rem;color:var(--fg-3);
+    padding:10px 14px;background:#fff;border:1px dashed var(--border);border-radius:var(--radius);
+  }
+  .build-note strong{color:var(--fg-2);}
+
+  /* ============================================================
+     APP CANVAS — 1366px tablet layout, the Power Apps default
+     ============================================================ */
+  .canvas{
+    background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    overflow:hidden;
+  }
+
+  /* ---- top app bar : Rectangle + Label + Icon controls ---- */
+  .appbar{
+    background:var(--surface);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:14px;padding:0 24px;height:64px;
+  }
+  .appbar .logo{
+    width:34px;height:34px;border-radius:8px;background:var(--primary);
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .appbar .logo svg{width:18px;height:18px;stroke:#fff;}
+  .appbar .title{font-weight:600;font-size:1rem;}
+  .appbar .crumb{color:var(--fg-3);font-size:.875rem;}
+  .appbar .spacer{flex:1;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;background:var(--primary-soft);
+    color:var(--primary);font-size:.75rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex:none;
+  }
+  .avatar.g{background:var(--accent-soft);color:var(--accent);}
+  .avatar.a{background:var(--warn-soft);color:var(--warn);}
+  .avatar.r{background:var(--danger-soft);color:var(--danger);}
+
+  .page{padding:28px 32px 40px;}
+  .page-head{margin-bottom:22px;}
+  .page-head h2{font-size:1.375rem;font-weight:600;}
+  .page-head p{color:var(--fg-2);font-size:.9rem;margin-top:2px;}
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:24px;
+  }
+
+  /* ---- form controls : TextInput / ComboBox / DatePicker ---- */
+  .field{margin-bottom:18px;}
+  .field label{
+    display:block;font-size:.82rem;font-weight:600;color:var(--fg-2);margin-bottom:6px;
+  }
+  .field .req{color:var(--danger);}
+  .control{
+    width:100%;height:42px;padding:0 12px;font:inherit;font-size:.9rem;color:var(--fg);
+    background:#fff;border:1px solid #CBD5E1;border-radius:6px;transition:border-color .15s;
+  }
+  .control:hover{border-color:var(--primary);}
+  .control:focus{outline:none;border:2px solid var(--primary);}
+  textarea.control{height:110px;padding:10px 12px;resize:vertical;}
+  .select-wrap{position:relative;}
+  .select-wrap select{appearance:none;cursor:pointer;}
+  .select-wrap::after{
+    content:"";position:absolute;right:14px;top:50%;width:8px;height:8px;
+    border-right:2px solid var(--fg-2);border-bottom:2px solid var(--fg-2);
+    transform:translateY(-70%) rotate(45deg);pointer-events:none;
+  }
+  .hint{font-size:.75rem;color:var(--fg-3);margin-top:5px;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 24px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 24px;}
+
+  /* ---- attachments : the SharePoint Attachments control ---- */
+  .attach-zone{
+    border:1px dashed #CBD5E1;border-radius:6px;background:var(--bg);
+    padding:18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s;
+  }
+  .attach-zone:hover{border-color:var(--primary);}
+  .attach-zone svg{width:22px;height:22px;stroke:var(--primary);flex:none;}
+  .attach-zone .t1{font-size:.875rem;font-weight:600;color:var(--primary);}
+  .attach-zone .t2{font-size:.78rem;color:var(--fg-3);}
+  .attach-file{
+    display:flex;align-items:center;gap:10px;margin-top:10px;
+    background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:9px 12px;
+    font-size:.82rem;
+  }
+  .attach-file svg{width:16px;height:16px;stroke:var(--fg-2);flex:none;}
+  .attach-file .x{margin-left:auto;color:var(--fg-3);cursor:pointer;font-weight:600;}
+  .attach-file .x:hover{color:var(--danger);}
+
+  /* ---- buttons : Button control ---- */
+  .btn{
+    font:inherit;font-size:.9rem;font-weight:600;border-radius:6px;cursor:pointer;
+    height:42px;padding:0 22px;border:1px solid transparent;transition:background .15s,border-color .15s;
+    display:inline-flex;align-items:center;gap:8px;justify-content:center;
+  }
+  .btn svg{width:16px;height:16px;}
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-ghost{background:#fff;color:var(--fg-2);border-color:#CBD5E1;}
+  .btn-ghost:hover{border-color:var(--fg-2);color:var(--fg);}
+  .btn-approve{background:var(--accent);color:#fff;height:48px;padding:0 34px;font-size:.95rem;}
+  .btn-approve:hover{background:#047857;}
+  .btn-reject{background:#fff;color:var(--danger);border-color:var(--danger);height:48px;padding:0 34px;font-size:.95rem;}
+  .btn-reject:hover{background:var(--danger-soft);}
+  .btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
+
+  /* ---- status pills : Rectangle(radius 12) + Label ---- */
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;border-radius:12px;
+    font-size:.75rem;font-weight:700;padding:4px 12px;white-space:nowrap;
+  }
+  .pill .dot{width:7px;height:7px;border-radius:50%;}
+  .pill.approved{background:var(--accent-soft);color:var(--accent);}
+  .pill.approved .dot{background:var(--accent);}
+  .pill.pending{background:var(--warn-soft);color:var(--warn);}
+  .pill.pending .dot{background:var(--warn);}
+  .pill.rejected{background:var(--danger-soft);color:var(--danger);}
+  .pill.rejected .dot{background:var(--danger);}
+  .pill.waiting{background:#EEF2F7;color:var(--fg-2);}
+  .pill.waiting .dot{background:var(--fg-3);}
+  .pill.draft{background:var(--primary-soft);color:var(--primary);}
+  .pill.draft .dot{background:var(--primary);}
+
+  /* ---- step header (screen 1) : circles + rectangles ---- */
+  .steps{display:flex;align-items:center;margin-bottom:26px;}
+  .step{display:flex;align-items:center;gap:10px;}
+  .step .n{
+    width:30px;height:30px;border-radius:50%;flex:none;font-size:.8rem;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--primary);color:#fff;
+  }
+  .step.todo .n{background:#fff;color:var(--fg-3);border:1px solid #CBD5E1;}
+  .step .t{font-size:.82rem;font-weight:600;}
+  .step.todo .t{color:var(--fg-3);font-weight:400;}
+  .step-line{flex:1;height:2px;background:var(--border);margin:0 14px;min-width:30px;}
+
+  /* ---- vertical approval timeline (screen 2) ---- */
+  .timeline{list-style:none;}
+  .tl-item{display:flex;gap:16px;position:relative;padding-bottom:28px;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-item::before{
+    content:"";position:absolute;left:17px;top:38px;bottom:2px;width:2px;background:var(--border);
+  }
+  .tl-item:last-child::before{display:none;}
+  .tl-item.done::before{background:var(--accent);}
+  .tl-dot{
+    width:36px;height:36px;border-radius:50%;flex:none;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+    background:#fff;border:2px solid #CBD5E1;
+  }
+  .tl-dot svg{width:16px;height:16px;}
+  .tl-item.done .tl-dot{background:var(--accent);border-color:var(--accent);}
+  .tl-item.done .tl-dot svg{stroke:#fff;}
+  .tl-item.now .tl-dot{border-color:var(--warn);background:var(--warn-soft);}
+  .tl-item.now .tl-dot svg{stroke:var(--warn);}
+  .tl-item.wait .tl-dot svg{stroke:var(--fg-3);}
+  .tl-body{flex:1;padding-top:2px;}
+  .tl-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .tl-head .who{font-weight:600;font-size:.92rem;}
+  .tl-head .role{color:var(--fg-3);font-size:.8rem;}
+  .tl-head .when{margin-left:auto;color:var(--fg-3);font-size:.78rem;}
+  .tl-comment{
+    margin-top:8px;font-size:.85rem;color:var(--fg-2);
+    background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 14px;
+  }
+
+  /* ---- summary rows / detail rows ---- */
+  .kv{display:flex;font-size:.875rem;padding:9px 0;border-bottom:1px solid var(--bg);}
+  .kv:last-child{border-bottom:none;}
+  .kv .k{width:150px;flex:none;color:var(--fg-3);}
+  .kv .v{color:var(--fg);font-weight:500;}
+
+  /* ---- KPI tiles (screen 4) : Rectangle + 2 Labels + Icon ---- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px;}
+  .kpi{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 20px;display:flex;align-items:center;gap:14px;
+  }
+  .kpi .ic{
+    width:42px;height:42px;border-radius:8px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kpi .ic svg{width:20px;height:20px;}
+  .kpi .num{font-size:1.5rem;font-weight:700;line-height:1.15;}
+  .kpi .lbl{font-size:.78rem;color:var(--fg-2);}
+
+  /* ---- table = Gallery control with a row template ---- */
+  .toolbar{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar .control{width:auto;min-width:170px;height:40px;font-size:.85rem;}
+  .toolbar .search{flex:1;min-width:220px;}
+  .table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .trow{
+    display:grid;grid-template-columns:110px 1.6fr 1fr 1fr .8fr .9fr 90px;
+    gap:12px;align-items:center;padding:13px 20px;font-size:.85rem;
+    border-bottom:1px solid var(--bg);
+  }
+  .trow:last-child{border-bottom:none;}
+  .trow.head{
+    background:var(--bg);font-size:.75rem;font-weight:700;color:var(--fg-2);
+    text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);
+  }
+  .trow:not(.head){cursor:pointer;transition:background .12s;}
+  .trow:not(.head):hover{background:var(--primary-soft);}
+  .trow .id{color:var(--primary);font-weight:600;}
+  .trow .who{display:flex;align-items:center;gap:8px;}
+  .trow .who .avatar{width:26px;height:26px;font-size:.62rem;}
+  .trow .muted{color:var(--fg-2);}
+  .link{color:var(--primary);font-weight:600;font-size:.82rem;text-decoration:none;cursor:pointer;}
+  .link:hover{text-decoration:underline;}
+
+  .two-col{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;align-items:start;}
+  .section-title{font-size:.95rem;font-weight:600;margin-bottom:14px;}
+  .divider{height:1px;background:var(--border);margin:20px 0;}
+
+  /* ---- banner (submit feedback) ---- */
+  .banner{
+    display:flex;align-items:center;gap:10px;border-radius:6px;padding:12px 16px;
+    font-size:.85rem;font-weight:500;margin-bottom:20px;
+    background:var(--accent-soft);color:var(--accent);border:1px solid #BFE3D4;
+  }
+  .banner svg{width:18px;height:18px;stroke:var(--accent);flex:none;}
+
+  @media (max-width:900px){
+    .grid-2,.grid-3,.two-col{grid-template-columns:1fr;}
+    .kpis{grid-template-columns:1fr 1fr;}
+    .trow{grid-template-columns:90px 1.4fr 1fr 90px;}
+    .trow .hide-sm{display:none;}
+    .page{padding:20px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="draft-header">
+  <h1>Approval Workflow — Power Apps Canvas UI Draft</h1>
+  <p>1366&times;768 tablet layout &middot; Segoe UI &middot; flat fills + 1px borders &middot; every element maps to a standard canvas control (Label, Button, Rectangle, Circle, Icon, Text input, Drop down, Date picker, Attachments, Gallery).</p>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="active" data-s="s1" role="tab">1 &middot; New Request</button>
+  <button data-s="s2" role="tab">2 &middot; Approval Flow Status</button>
+  <button data-s="s3" role="tab">3 &middot; Approver Action</button>
+  <button data-s="s4" role="tab">4 &middot; Admin Overview</button>
+</div>
+
+<!-- ============================================================
+     SCREEN 1 — NEW REQUEST (requester form)
+     ============================================================ -->
+<section class="screen active" id="s1">
+  <div class="canvas">
+    <div class="appbar">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="title">Approval Hub</span>
+      <span class="crumb">/ New Request</span>
+      <div class="spacer"></div>
+      <div class="avatar">PT</div>
+    </div>
+    <div class="page" style="max-width:880px;margin:0 auto;">
+      <div class="page-head">
+        <h2>Submit a new request</h2>
+        <p>Fill in the details below. The approval route is assigned automatically from the request type and amount.</p>
+      </div>
+
+      <!-- step indicator : Circle shapes + Label + thin Rectangle -->
+      <div class="steps">
+        <div class="step"><span class="n">1</span><span class="t">Details</span></div>
+        <div class="step-line"></div>
+        <div class="step todo"><span class="n">2</span><span class="t">Review route</span></div>
+        <div class="step-line"></div>
+        <div class="step todo"><span class="n">3</span><span class="t">Submitted</span></div>
+      </div>
+
+      <div class="card">
+        <div class="grid-2">
+          <div class="field">
+            <label for="rtype">Request type <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select id="rtype" class="control">
+                <option>Purchase request</option>
+                <option>Expense reimbursement</option>
+                <option>Leave / time off</option>
+                <option>IT access request</option>
+                <option>Contract review</option>
+                <option>Travel request</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="prio">Priority <span class="req">*</span></label>
+            <div class="select-wrap">
+              <select id="prio" class="control">
+                <option>Normal</option>
+                <option>High</option>
+                <option>Urgent</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="rtitle">Request title <span class="req">*</span></label>
+          <input id="rtitle" class="control" type="text" value="Laptop replacement for design team">
+        </div>
+
+        <div class="field">
+          <label for="rdesc">Description <span class="req">*</span></label>
+          <textarea id="rdesc" class="control">Current devices are out of warranty and failing. Requesting 3&times; 16&quot; laptops per the standard hardware catalog, to be delivered before the Q3 campaign kickoff.</textarea>
+          <div class="hint">Explain what you need and why. Approvers see this text first.</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="field">
+            <label for="amt">Estimated amount</label>
+            <input id="amt" class="control" type="text" value="$ 4,650.00">
+          </div>
+          <div class="field">
+            <label for="need">Needed by</label>
+            <input id="need" class="control" type="text" value="08/15/2026">
+            <div class="hint">Date picker control</div>
+          </div>
+          <div class="field">
+            <label for="dept">Department</label>
+            <div class="select-wrap">
+              <select id="dept" class="control">
+                <option>Design</option><option>Engineering</option><option>Sales</option><option>Operations</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Attachments</label>
+          <div class="attach-zone" tabindex="0">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+            <div>
+              <div class="t1">Attach file</div>
+              <div class="t2">Quote, form, or supporting document &middot; up to 10 MB</div>
+            </div>
+          </div>
+          <div class="attach-file">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h5"/></svg>
+            vendor-quote-Q3.pdf &middot; 1.2 MB
+            <span class="x" title="Remove attachment">&#10005;</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- approval route preview : horizontal gallery of avatars -->
+        <div class="section-title" style="margin-bottom:10px;">Approval route (auto-assigned)</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar g">MK</div>
+            <div><div style="font-size:.82rem;font-weight:600;">Maya Khan</div><div style="font-size:.72rem;color:var(--fg-3);">Team manager</div></div>
+          </div>
+          <svg style="width:18px;height:18px;stroke:var(--fg-3);" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar a">JR</div>
+            <div><div style="font-size:.82rem;font-weight:600;">Jordan Reyes</div><div style="font-size:.72rem;color:var(--fg-3);">Finance</div></div>
+          </div>
+          <svg style="width:18px;height:18px;stroke:var(--fg-3);" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar">AS</div>
+            <div><div style="font-size:.82rem;font-weight:600;">Alex Singh</div><div style="font-size:.72rem;color:var(--fg-3);">Department head</div></div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+          <button class="btn btn-ghost">Save draft</button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+            Submit request
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="build-note"><strong>Power Apps build note:</strong> form = Edit form or individual controls (Drop down &times;3, Text input &times;3, Date picker, Attachments control inside a form). Step indicator = 3 Circle shapes + Labels + thin Rectangles. Route preview = horizontal blank Gallery bound to the approver chain table. Submit = <code>Patch()</code> + <code>Navigate(ScreenFlowStatus)</code>, trigger the Power Automate approval flow OnSelect.</div>
+</section>
+
+<!-- ============================================================
+     SCREEN 2 — APPROVAL FLOW STATUS (requester view)
+     ============================================================ -->
+<section class="screen" id="s2">
+  <div class="canvas">
+    <div class="appbar">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="title">Approval Hub</span>
+      <span class="crumb">/ My Requests / REQ-1042</span>
+      <div class="spacer"></div>
+      <div class="avatar">PT</div>
+    </div>
+    <div class="page">
+      <div class="banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        Request submitted successfully. You will be notified at each approval step.
+      </div>
+
+      <div class="page-head" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <h2>REQ-1042 &middot; Laptop replacement for design team</h2>
+          <p>Submitted Jul 17, 2026 &middot; Purchase request &middot; $4,650.00</p>
+        </div>
+        <div style="margin-left:auto;"><span class="pill pending"><span class="dot"></span>In review &middot; step 2 of 3</span></div>
+      </div>
+
+      <div class="two-col">
+        <!-- timeline card -->
+        <div class="card">
+          <div class="section-title">Approval progress</div>
+          <ul class="timeline">
+            <li class="tl-item done">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head">
+                  <div class="avatar g" style="width:28px;height:28px;font-size:.65rem;">MK</div>
+                  <span class="who">Maya Khan</span><span class="role">Team manager</span>
+                  <span class="pill approved"><span class="dot"></span>Approved</span>
+                  <span class="when">Jul 17, 10:24 AM</span>
+                </div>
+                <div class="tl-comment">Devices are overdue for replacement — approved. Please keep to the standard catalog models.</div>
+              </div>
+            </li>
+            <li class="tl-item now">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head">
+                  <div class="avatar a" style="width:28px;height:28px;font-size:.65rem;">JR</div>
+                  <span class="who">Jordan Reyes</span><span class="role">Finance</span>
+                  <span class="pill pending"><span class="dot"></span>Pending</span>
+                  <span class="when">Waiting 1 day</span>
+                </div>
+              </div>
+            </li>
+            <li class="tl-item wait">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head">
+                  <div class="avatar" style="width:28px;height:28px;font-size:.65rem;">AS</div>
+                  <span class="who">Alex Singh</span><span class="role">Department head</span>
+                  <span class="pill waiting"><span class="dot"></span>Not started</span>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- request summary card -->
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="section-title">Request details</div>
+            <div class="kv"><span class="k">Request ID</span><span class="v">REQ-1042</span></div>
+            <div class="kv"><span class="k">Type</span><span class="v">Purchase request</span></div>
+            <div class="kv"><span class="k">Requester</span><span class="v">Priya Tan &middot; Design</span></div>
+            <div class="kv"><span class="k">Priority</span><span class="v">Normal</span></div>
+            <div class="kv"><span class="k">Amount</span><span class="v">$4,650.00</span></div>
+            <div class="kv"><span class="k">Needed by</span><span class="v">Aug 15, 2026</span></div>
+            <div class="kv"><span class="k">Attachment</span><span class="v"><a class="link">vendor-quote-Q3.pdf</a></span></div>
+          </div>
+          <div class="card">
+            <div class="section-title">Actions</div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <button class="btn btn-ghost" style="width:100%;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16v13H7l-3 3z"/></svg>
+                Send reminder to current approver
+              </button>
+              <button class="btn btn-ghost" style="width:100%;color:var(--danger);border-color:var(--danger);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                Withdraw request
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="build-note"><strong>Power Apps build note:</strong> timeline = blank vertical Gallery bound to the Approvals steps table; each template row = Circle (status dot) + Icon + Labels + Rectangle (connector line, Width 2). Status pill = Rectangle (BorderRadius 12) + Label with <code>Switch(Status,...)</code> fill. Summary = Display form or Label pairs. Banner appears via a visible-on-timer variable after submit.</div>
+</section>
+
+<!-- ============================================================
+     SCREEN 3 — APPROVER ACTION
+     ============================================================ -->
+<section class="screen" id="s3">
+  <div class="canvas">
+    <div class="appbar">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="title">Approval Hub</span>
+      <span class="crumb">/ Pending Approvals / REQ-1042</span>
+      <div class="spacer"></div>
+      <span class="pill pending"><span class="dot"></span>3 waiting for you</span>
+      <div class="avatar a">JR</div>
+    </div>
+    <div class="page">
+      <div class="page-head" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <h2>Review request REQ-1042</h2>
+          <p>You are approver 2 of 3 &middot; assigned Jul 17, 10:24 AM &middot; waiting 1 day</p>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="height:38px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Previous
+          </button>
+          <button class="btn btn-ghost" style="height:38px;">
+            Next
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <div class="avatar">PT</div>
+              <div>
+                <div style="font-weight:600;font-size:.95rem;">Priya Tan</div>
+                <div style="font-size:.78rem;color:var(--fg-3);">Design &middot; requested Jul 17, 2026</div>
+              </div>
+              <span class="pill draft" style="margin-left:auto;"><span class="dot"></span>Purchase request</span>
+            </div>
+            <div class="kv"><span class="k">Title</span><span class="v">Laptop replacement for design team</span></div>
+            <div class="kv"><span class="k">Amount</span><span class="v">$4,650.00</span></div>
+            <div class="kv"><span class="k">Needed by</span><span class="v">Aug 15, 2026</span></div>
+            <div class="kv"><span class="k">Priority</span><span class="v">Normal</span></div>
+            <div class="divider" style="margin:14px 0;"></div>
+            <div class="section-title" style="font-size:.85rem;">Description</div>
+            <p style="font-size:.875rem;color:var(--fg-2);">Current devices are out of warranty and failing. Requesting 3&times; 16&quot; laptops per the standard hardware catalog, to be delivered before the Q3 campaign kickoff.</p>
+            <div class="attach-file" style="margin-top:14px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h5"/></svg>
+              vendor-quote-Q3.pdf &middot; 1.2 MB
+              <a class="link" style="margin-left:auto;">Open</a>
+            </div>
+          </div>
+
+          <!-- decision card -->
+          <div class="card">
+            <div class="section-title">Your decision</div>
+            <div class="field">
+              <label for="cmt">Comment <span style="color:var(--fg-3);font-weight:400;">(required when rejecting)</span></label>
+              <textarea id="cmt" class="control" style="height:88px;" placeholder="Add a note for the requester and the next approver..."></textarea>
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-approve">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                Approve
+              </button>
+              <button class="btn btn-reject">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                Reject
+              </button>
+              <button class="btn btn-ghost" style="height:48px;margin-left:auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg>
+                Reassign
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- history sidebar -->
+        <div class="card">
+          <div class="section-title">Approval history</div>
+          <ul class="timeline">
+            <li class="tl-item done">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head"><span class="who">Maya Khan</span><span class="when">Jul 17</span></div>
+                <div style="font-size:.78rem;color:var(--fg-3);">Team manager &middot; Approved</div>
+                <div class="tl-comment">Devices are overdue for replacement — approved.</div>
+              </div>
+            </li>
+            <li class="tl-item now">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head"><span class="who">You (Jordan Reyes)</span></div>
+                <div style="font-size:.78rem;color:var(--fg-3);">Finance &middot; Pending your decision</div>
+              </div>
+            </li>
+            <li class="tl-item wait">
+              <div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0114 0v1"/></svg></div>
+              <div class="tl-body">
+                <div class="tl-head"><span class="who">Alex Singh</span></div>
+                <div style="font-size:.78rem;color:var(--fg-3);">Department head &middot; Not started</div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="build-note"><strong>Power Apps build note:</strong> Approve/Reject = two Button controls; OnSelect runs <code>Patch()</code> on the step record (or responds to the Power Automate approval) then <code>Navigate()</code> to the next pending item. Reject disables until the comment Text input is non-blank (<code>DisplayMode = If(IsBlank(txtComment.Text), Disabled, Edit)</code>). Previous/Next = Gallery-driven navigation across <code>Filter(Steps, Approver = User().Email && Status = "Pending")</code>.</div>
+</section>
+
+<!-- ============================================================
+     SCREEN 4 — ADMIN OVERVIEW
+     ============================================================ -->
+<section class="screen" id="s4">
+  <div class="canvas">
+    <div class="appbar">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="title">Approval Hub</span>
+      <span class="crumb">/ Admin</span>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" style="height:36px;font-size:.8rem;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 16V4m0 0l-4 4m4-4l4 4"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+        Export
+      </button>
+      <div class="avatar r">AD</div>
+    </div>
+    <div class="page">
+      <div class="page-head">
+        <h2>All requests</h2>
+        <p>Organization-wide view of every approval request and its current stage.</p>
+      </div>
+
+      <!-- KPI tiles -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="ic" style="background:var(--primary-soft);"><svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h5"/></svg></div>
+          <div><div class="num">128</div><div class="lbl">Total this month</div></div>
+        </div>
+        <div class="kpi">
+          <div class="ic" style="background:var(--warn-soft);"><svg viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div><div class="num">23</div><div class="lbl">Pending review</div></div>
+        </div>
+        <div class="kpi">
+          <div class="ic" style="background:var(--accent-soft);"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div><div class="num">96</div><div class="lbl">Approved</div></div>
+        </div>
+        <div class="kpi">
+          <div class="ic" style="background:var(--danger-soft);"><svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+          <div><div class="num">9</div><div class="lbl">Rejected</div></div>
+        </div>
+      </div>
+
+      <!-- filters -->
+      <div class="toolbar">
+        <input class="control search" type="search" placeholder="Search by ID, title, or requester...">
+        <div class="select-wrap"><select class="control"><option>All types</option><option>Purchase</option><option>Expense</option><option>Leave</option><option>IT access</option></select></div>
+        <div class="select-wrap"><select class="control"><option>All statuses</option><option>Pending</option><option>Approved</option><option>Rejected</option></select></div>
+        <div class="select-wrap"><select class="control"><option>Last 30 days</option><option>Last 90 days</option><option>This year</option></select></div>
+      </div>
+
+      <!-- request table = Gallery -->
+      <div class="table">
+        <div class="trow head">
+          <span>ID</span><span>Request</span><span>Requester</span><span class="hide-sm">Current approver</span><span class="hide-sm">Amount</span><span>Status</span><span class="hide-sm">Age</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1042</span>
+          <span>Laptop replacement for design team</span>
+          <span class="who"><span class="avatar">PT</span>Priya Tan</span>
+          <span class="muted hide-sm">Jordan Reyes</span>
+          <span class="muted hide-sm">$4,650</span>
+          <span><span class="pill pending"><span class="dot"></span>Pending</span></span>
+          <span class="muted hide-sm">1d</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1041</span>
+          <span>Conference travel — DevSummit 2026</span>
+          <span class="who"><span class="avatar g">LN</span>Lee Nakamura</span>
+          <span class="muted hide-sm">Maya Khan</span>
+          <span class="muted hide-sm">$2,180</span>
+          <span><span class="pill pending"><span class="dot"></span>Pending</span></span>
+          <span class="muted hide-sm">2d</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1040</span>
+          <span>Software license renewal — Figma org plan</span>
+          <span class="who"><span class="avatar a">RB</span>Rosa Brandt</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span class="muted hide-sm">$7,900</span>
+          <span><span class="pill approved"><span class="dot"></span>Approved</span></span>
+          <span class="muted hide-sm">3d</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1039</span>
+          <span>Contract review — vendor onboarding</span>
+          <span class="who"><span class="avatar r">SO</span>Sam Okafor</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span><span class="pill rejected"><span class="dot"></span>Rejected</span></span>
+          <span class="muted hide-sm">4d</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1038</span>
+          <span>Parental leave — September</span>
+          <span class="who"><span class="avatar">DW</span>Dana Wu</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span><span class="pill approved"><span class="dot"></span>Approved</span></span>
+          <span class="muted hide-sm">5d</span>
+        </div>
+        <div class="trow">
+          <span class="id">REQ-1037</span>
+          <span>IT access — production database read role</span>
+          <span class="who"><span class="avatar g">KP</span>Kai Petrov</span>
+          <span class="muted hide-sm">Security team</span>
+          <span class="muted hide-sm">&mdash;</span>
+          <span><span class="pill pending"><span class="dot"></span>Pending</span></span>
+          <span class="muted hide-sm">6d</span>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;margin-top:14px;font-size:.82rem;color:var(--fg-2);">
+        Showing 6 of 128 requests
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-ghost" style="height:34px;padding:0 14px;font-size:.8rem;">Previous</button>
+          <button class="btn btn-ghost" style="height:34px;padding:0 14px;font-size:.8rem;">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="build-note"><strong>Power Apps build note:</strong> KPI tiles = 4 Rectangles each with Icon + 2 Labels, numbers via <code>CountRows(Filter(Requests,...))</code>. Filters = Text input + 3 Drop downs feeding one <code>Filter()</code> on the Gallery Items. Table = blank vertical Gallery with Label columns (no HTML table needed); row hover = <code>TemplateFill: If(ThisItem.IsSelected, ...)</code>. Export = Power Automate flow creating a CSV/Excel file.</div>
+</section>
+
+<script>
+  const tabs = document.querySelectorAll('.tabs button');
+  const screens = document.querySelectorAll('.screen');
+  tabs.forEach(b => b.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    screens.forEach(s => s.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById(b.dataset.s).classList.add('active');
+    window.scrollTo({top:0});
+  }));
+</script>
+</body>
+</html>
