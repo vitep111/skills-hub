@@ -62,8 +62,11 @@
   /* ============================================================
      APP CANVAS — 1366px tablet layout, the Power Apps default
      ============================================================ */
+  /* The app frame is a sharp-cornered rectangle, exactly as Power Apps
+     renders a canvas app — screens always fill the player edge-to-edge
+     with square corners; only elements INSIDE a screen can be rounded. */
   .canvas{
-    background:var(--bg);border:1px solid var(--border);border-radius:12px;
+    background:var(--bg);border:1px solid var(--border);
     overflow:hidden;
   }
 
