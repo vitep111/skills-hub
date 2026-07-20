@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Accrued Expense — Power Apps Redesign (Draft)</title>
+<style>
+  /* ===== Design tokens (map 1:1 to Power Apps App.Formulas / theme variables) ===== */
+  :root{
+    --primary:#0D9488;        /* teal-600  -> App primary */
+    --primary-dark:#0F5C57;   /* nav / headers */
+    --primary-050:#ECFDF9;
+    --accent:#EA580C;         /* action orange, used sparingly */
+    --bg:#F1F5F9;             /* slate-100 canvas background */
+    --surface:#FFFFFF;
+    --surface-2:#F8FAFC;
+    --text:#0F172A;           /* slate-900 */
+    --muted:#64748B;          /* slate-500 */
+    --border:#E2E8F0;         /* slate-200 */
+    --border-strong:#CBD5E1;
+    --draft:#64748B;
+    --pending:#D97706;        /* amber-600 */
+    --pending-bg:#FEF3C7;
+    --approved:#16A34A;
+    --approved-bg:#DCFCE7;
+    --rejected:#DC2626;
+    --rejected-bg:#FEE2E2;
+    --info-bg:#E0F2FE;
+    --info:#0284C7;
+    --radius:10px;
+    --radius-sm:7px;
+    --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 24px -12px rgba(15,23,42,.18);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.08);
+    --font:'Segoe UI','Open Sans',Lato,system-ui,-apple-system,Arial,sans-serif; /* all native to Power Apps */
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:var(--font);color:var(--text);background:#334155;line-height:1.45;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  .clickable{cursor:pointer}
+
+  /* ===== App device frame ===== */
+  .device{max-width:1440px;margin:22px auto;background:var(--bg);border-radius:16px;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.55);border:1px solid #1e293b}
+  .device__caption{max-width:1440px;margin:0 auto;padding:14px 22px 0;color:#cbd5e1;font-size:13px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+  .device__caption b{color:#fff}
+  .toggle{display:inline-flex;align-items:center;gap:8px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;padding:6px 11px;border-radius:999px;font-size:12px}
+  .toggle input{accent-color:var(--primary)}
+
+  /* ===== App shell ===== */
+  .shell{display:grid;grid-template-columns:236px 1fr;min-height:840px}
+
+  /* Top bar spans full width via being inside content; here we do nav + main */
+  .nav{background:linear-gradient(180deg,var(--primary-dark),#0b4a46);color:#d1faf4;display:flex;flex-direction:column;padding:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.10)}
+  .brand__logo{width:34px;height:34px;border-radius:9px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:var(--shadow-sm)}
+  .brand__logo svg{display:block}
+  .brand__name{font-weight:800;color:#fff;font-size:15px;letter-spacing:.2px;line-height:1.1}
+  .brand__sub{font-size:11px;color:#a7f3ec}
+  .nav__group{padding:10px 10px 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:#7fd8ce;font-weight:700}
+  .nav__item{display:flex;align-items:center;gap:11px;padding:9px 12px;margin:2px 8px;border-radius:9px;color:#d1faf4;font-size:13.5px;font-weight:500;position:relative}
+  .nav__item svg{width:18px;height:18px;flex:none;opacity:.9}
+  .nav__item:hover{background:rgba(255,255,255,.08)}
+  .nav__item.active{background:#fff;color:var(--primary-dark);font-weight:700;box-shadow:var(--shadow-sm)}
+  .nav__item.active svg{opacity:1}
+  .nav__badge{margin-left:auto;background:var(--accent);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:999px;display:grid;place-items:center;padding:0 5px}
+  .nav__item.active .nav__badge{background:var(--accent)}
+  .nav__spacer{flex:1}
+  .nav__user{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid rgba(255,255,255,.10)}
+  .avatar{width:32px;height:32px;border-radius:50%;background:#14b8a6;color:#04312d;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}
+  .nav__user small{display:block;color:#a7f3ec;font-size:11px}
+  .nav__user .nm{color:#fff;font-weight:600;font-size:13px;line-height:1.15}
+
+  /* ===== Main region ===== */
+  .main{display:flex;flex-direction:column;min-width:0}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;gap:16px}
+  .crumbs{font-size:12.5px;color:var(--muted)}
+  .crumbs b{color:var(--text)}
+  .topbar h1{font-size:17px;margin:0;font-weight:800;letter-spacing:.2px}
+  .search{margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:7px 13px;color:var(--muted);font-size:13px;min-width:230px}
+  .search input{border:0;background:transparent;outline:none;font:inherit;color:var(--text);width:100%}
+  .iconbtn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;color:var(--muted);position:relative}
+  .iconbtn:hover{border-color:var(--border-strong);color:var(--text)}
+  .dot{position:absolute;top:7px;right:8px;width:8px;height:8px;background:var(--accent);border-radius:50%;border:2px solid #fff}
+
+  .content{padding:22px;overflow:auto}
+  .screen{display:none}
+  .screen.active{display:block;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ===== Reusable ===== */
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm)}
+  .card__hd{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .card__hd h3{margin:0;font-size:14.5px;font-weight:700}
+  .card__hd .sub{font-size:12px;color:var(--muted);font-weight:500}
+  .card__bd{padding:18px}
+  .section-ico{width:30px;height:30px;border-radius:8px;background:var(--primary-050);color:var(--primary);display:grid;place-items:center;flex:none}
+
+  .btn{display:inline-flex;align-items:center;gap:7px;border-radius:9px;padding:9px 15px;font-size:13px;font-weight:600;border:1px solid transparent;transition:.15s;white-space:nowrap}
+  .btn svg{width:16px;height:16px}
+  .btn--primary{background:var(--primary);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn--primary:hover{background:#0b7f75}
+  .btn--accent{background:var(--accent);color:#fff}
+  .btn--accent:hover{background:#c2470a}
+  .btn--ghost{background:var(--surface);color:var(--text);border-color:var(--border-strong)}
+  .btn--ghost:hover{background:var(--surface-2)}
+  .btn--subtle{background:var(--surface-2);color:var(--muted);border-color:var(--border)}
+  .btn--subtle:hover{color:var(--text)}
+  .btn--danger{background:#fff;color:var(--rejected);border-color:#fca5a5}
+  .btn--danger:hover{background:var(--rejected-bg)}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.2px}
+  .chip::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+  .chip--draft{color:var(--draft);background:#F1F5F9}
+  .chip--pending{color:var(--pending);background:var(--pending-bg)}
+  .chip--approved{color:var(--approved);background:var(--approved-bg)}
+  .chip--rejected{color:var(--rejected);background:var(--rejected-bg)}
+  .chip--info{color:var(--info);background:var(--info-bg)}
+
+  /* Power Apps control annotation tags */
+  .pa{position:relative}
+  .pa-tag{display:none;position:absolute;z-index:5;top:-9px;left:10px;background:#4338CA;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.3px;padding:2px 7px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.2);pointer-events:none;white-space:nowrap}
+  body.annot .pa-tag{display:inline-block}
+  body.annot .pa{outline:1.5px dashed #a5b4fc;outline-offset:2px;border-radius:6px}
+
+  /* ===== Form controls (mimic Power Apps DataCards) ===== */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;font-weight:600;color:#334155}
+  .field label .req{color:var(--rejected);margin-left:2px}
+  .input,.select{border:1px solid var(--border-strong);background:var(--surface);border-radius:8px;padding:9px 11px;font:inherit;font-size:13px;color:var(--text);outline:none;width:100%}
+  .input:focus,.select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,148,136,.15)}
+  .input[readonly]{background:var(--surface-2);color:var(--muted)}
+  .select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px}
+  .hint{font-size:11px;color:var(--muted)}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .switch{width:38px;height:22px;border-radius:999px;background:var(--primary);position:relative;flex:none}
+  .switch::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+  .switch.off{background:var(--border-strong)}
+  .switch.off::after{left:2px;right:auto}
+
+  /* ===== KPI ===== */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow-sm)}
+  .kpi .k{font-size:12px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:7px}
+  .kpi .v{font-size:26px;font-weight:800;margin-top:8px;letter-spacing:-.5px}
+  .kpi .d{font-size:11px;margin-top:3px;color:var(--muted)}
+  .kpi .kico{width:26px;height:26px;border-radius:7px;display:grid;place-items:center}
+
+  /* ===== Table / gallery ===== */
+  .tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;padding:11px 14px;background:var(--surface-2);border-bottom:1px solid var(--border);position:sticky;top:0}
+  .tbl td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl tbody tr:hover{background:var(--primary-050)}
+  .tbl .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .ae-link{color:var(--primary);font-weight:700;text-decoration:none}
+  .ae-link:hover{text-decoration:underline}
+  .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+
+  /* Line-item editable gallery */
+  .li-tbl td,.li-tbl th{padding:10px 10px}
+  .li-tbl .cell-input{border:1px solid var(--border);border-radius:7px;padding:7px 9px;font:inherit;font-size:12.5px;width:100%;background:var(--surface);outline:none}
+  .li-tbl .cell-input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+  .li-tbl tr.editing{background:var(--primary-050)}
+  .li-actions{display:flex;gap:6px}
+  .mini{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:#fff;display:grid;place-items:center;color:var(--muted)}
+  .mini:hover{color:var(--text);border-color:var(--border-strong)}
+  .mini.del:hover{color:var(--rejected);border-color:#fca5a5;background:var(--rejected-bg)}
+  .totalbar{display:flex;justify-content:flex-end;gap:26px;padding:14px 16px;background:var(--surface-2);border-top:1px solid var(--border);border-radius:0 0 var(--radius) var(--radius);font-size:13px}
+  .totalbar .t-lbl{color:var(--muted)}
+  .totalbar .t-val{font-weight:800;font-size:15px}
+
+  /* ===== Stepper (approval workflow) ===== */
+  .stepper{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:6px 2px}
+  .step{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:118px;position:relative;flex:1}
+  .step:not(:last-child)::after{content:"";position:absolute;top:16px;left:calc(50% + 18px);right:calc(-50% + 18px);height:2px;background:var(--border-strong)}
+  .step.done:not(:last-child)::after{background:var(--approved)}
+  .step .node{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--border-strong);color:var(--muted);z-index:1;font-weight:700;font-size:13px}
+  .step.done .node{background:var(--approved);border-color:var(--approved);color:#fff}
+  .step.current .node{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(13,148,136,.18)}
+  .step .s-role{font-size:11.5px;font-weight:700;text-align:center;color:var(--text)}
+  .step .s-meta{font-size:10.5px;color:var(--muted);text-align:center}
+  .step.current .s-role{color:var(--primary)}
+
+  /* ===== Timeline (history) ===== */
+  .timeline{position:relative;padding-left:26px}
+  .timeline::before{content:"";position:absolute;left:9px;top:4px;bottom:4px;width:2px;background:var(--border)}
+  .tl{position:relative;padding:0 0 18px}
+  .tl:last-child{padding-bottom:0}
+  .tl .tl-dot{position:absolute;left:-21px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid var(--primary);display:grid;place-items:center}
+  .tl .tl-dot i{width:6px;height:6px;border-radius:50%;background:var(--primary)}
+  .tl .tl-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .tl .tl-who{font-weight:700;font-size:13px}
+  .tl .tl-act{font-size:12px}
+  .tl .tl-time{font-size:11px;color:var(--muted);margin-left:auto}
+  .tl .tl-note{font-size:12px;color:var(--muted);margin-top:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;padding:7px 10px}
+
+  /* ===== Attachments ===== */
+  .drop{border:1.5px dashed var(--border-strong);border-radius:var(--radius);padding:22px;text-align:center;color:var(--muted);background:var(--surface-2)}
+  .drop b{color:var(--text)}
+  .att{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12.5px}
+  .att .fico{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;flex:none;color:#fff}
+  .att .rm{margin-left:auto;color:var(--muted);cursor:pointer}
+  .att .rm:hover{color:var(--rejected)}
+
+  /* action footer */
+  .actionbar{position:sticky;bottom:0;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow);margin-top:4px}
+  .actionbar .save-state{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .spacer{flex:1}
+
+  .sec-title{display:flex;align-items:center;gap:10px;margin:22px 2px 12px}
+  .sec-title h2{font-size:15px;margin:0;font-weight:800}
+  .sec-title .line{flex:1;height:1px;background:var(--border)}
+
+  .banner{display:flex;gap:12px;align-items:center;background:var(--info-bg);border:1px solid #bae6fd;color:#075985;border-radius:var(--radius);padding:12px 16px;font-size:13px;margin-bottom:16px}
+
+  .seg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px}
+  .seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--muted)}
+  .seg button.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm)}
+
+  .legend{max-width:1440px;margin:14px auto 40px;color:#cbd5e1;font-size:12.5px;padding:0 22px;display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .legend .lg{display:inline-flex;align-items:center;gap:7px}
+  .legend .sw{width:22px;height:14px;border-radius:4px;background:#4338CA;border:1px dashed #a5b4fc}
+
+  @media(max-width:1080px){
+    .kpis{grid-template-columns:repeat(2,1fr)}
+    .shell{grid-template-columns:64px 1fr}
+    .brand__name,.brand__sub,.nav__item span,.nav__group,.nav__user small,.nav__user .nm{display:none}
+    .nav__item{justify-content:center;margin:2px 6px}
+    .grid-2,.grid-3{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body class="annot">
+
+<div class="device__caption">
+  <div>Draft mockup · <b>Accrued Expense — Power Apps (Canvas) redesign</b> · desktop/tablet layout 1440×840</div>
+  <label class="toggle"><input type="checkbox" id="annotToggle" checked onchange="document.body.classList.toggle('annot',this.checked)"> Show Power Apps control tags</label>
+</div>
+
+<div class="device">
+  <div class="shell">
+
+    <!-- ================= LEFT NAV ================= -->
+    <aside class="nav pa">
+      <span class="pa-tag">Component: NavRail (Vertical container + Gallery)</span>
+      <div class="brand">
+        <div class="brand__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2c1.5 3 4 4.2 4 7.5A4 4 0 0 1 12 13a4 4 0 0 1-4-3.5C8 6.2 10.5 5 12 2Z" fill="#EA580C"/><path d="M12 22a6 6 0 0 0 6-6c0-2-1-3.5-2.2-4.8C15.6 13 14 14 12 14s-3.6-1-3.8-2.8C7 12.5 6 14 6 16a6 6 0 0 0 6 6Z" fill="#0D9488"/></svg>
+        </div>
+        <div>
+          <div class="brand__name">Accrued Expense</div>
+          <div class="brand__sub">Finance Workflow</div>
+        </div>
+      </div>
+
+      <div class="nav__group">Workspace</div>
+      <div class="nav__item active clickable" data-screen="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></div>
+      <div class="nav__item clickable" data-screen="form"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>New Request</span></div>
+      <div class="nav__item clickable" data-screen="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>My Requests</span></div>
+
+      <div class="nav__group">Approvals</div>
+      <div class="nav__item clickable" data-screen="approval"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg><span>My Approvals</span><span class="nav__badge">5</span></div>
+      <div class="nav__item clickable" data-screen="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>AR Review</span></div>
+
+      <div class="nav__group">Tracking</div>
+      <div class="nav__item clickable" data-screen="tracking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg><span>Accrual Tracking</span></div>
+      <div class="nav__item clickable" data-screen="tracking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span>Reverse Accrual</span></div>
+
+      <div class="nav__spacer"></div>
+      <div class="nav__user pa">
+        <span class="pa-tag">User() + Office365Users</span>
+        <div class="avatar">VP</div>
+        <div>
+          <div class="nm">Vite Pongputthaporn</div>
+          <small>Requester · FAS/S · #67165</small>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <div class="main">
+      <div class="topbar">
+        <div>
+          <div class="crumbs" id="crumbs"><b>Dashboard</b></div>
+          <h1 id="pageTitle">My Accrued Expenses</h1>
+        </div>
+        <div class="search pa">
+          <span class="pa-tag">Text input (SearchIcon)</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="Search AE No., vendor, project…" />
+        </div>
+        <button class="iconbtn pa" title="Notifications"><span class="pa-tag">Icon + Notification badge</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="dot"></span></button>
+        <button class="btn btn--primary pa" onclick="go('form')"><span class="pa-tag">Button → Navigate(scrForm)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>New Request</button>
+      </div>
+
+      <div class="content">
+
+        <!-- =========== SCREEN: DASHBOARD =========== -->
+        <section class="screen active" id="dashboard">
+          <div class="kpis">
+            <div class="kpi pa"><span class="pa-tag">Gallery/Card + CountRows()</span>
+              <div class="k"><span class="kico" style="background:#F1F5F9;color:#64748B"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h10v8H4z"/></svg></span>Draft</div>
+              <div class="v">3</div><div class="d">Not yet submitted</div>
+            </div>
+            <div class="kpi pa"><span class="pa-tag">Filter(...,Status="Pending")</span>
+              <div class="k"><span class="kico" style="background:var(--pending-bg);color:var(--pending)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>Pending</div>
+              <div class="v">7</div><div class="d">Awaiting approval</div>
+            </div>
+            <div class="kpi">
+              <div class="k"><span class="kico" style="background:var(--approved-bg);color:var(--approved)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></span>Approved</div>
+              <div class="v">24</div><div class="d">This period</div>
+            </div>
+            <div class="kpi">
+              <div class="k"><span class="kico" style="background:var(--rejected-bg);color:var(--rejected)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span>Returned</div>
+              <div class="v">2</div><div class="d">Needs revision</div>
+            </div>
+            <div class="kpi" style="background:linear-gradient(135deg,var(--primary),#0b7f75);border-color:transparent;color:#fff">
+              <div class="k" style="color:#c8fdf3"><span class="kico" style="background:rgba(255,255,255,.2);color:#fff"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Total accrued</div>
+              <div class="v">฿ 4.82M</div><div class="d" style="color:#c8fdf3">Jul 2026 · all currencies (THB eq.)</div>
+            </div>
+          </div>
+
+          <div class="card pa">
+            <span class="pa-tag">Gallery (blank, vertical) bound to AccruedExpenses</span>
+            <div class="card__hd">
+              <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+              <h3>My Requests</h3><span class="sub">· current accounting period</span>
+              <div style="margin-left:auto;display:flex;gap:10px">
+                <div class="seg"><button class="active">All</button><button>Draft</button><button>Pending</button><button>Approved</button></div>
+                <button class="btn btn--ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16l-6 8v6l-4 2v-8z"/></svg>Filter</button>
+              </div>
+            </div>
+            <div class="table-wrap" style="border:0;border-radius:0">
+              <table class="tbl">
+                <thead><tr>
+                  <th>AE No.</th><th>Type</th><th>Budget Holder</th><th>Period</th><th>Lines</th><th class="num">Amount</th><th>Current step</th><th>Status</th><th></th>
+                </tr></thead>
+                <tbody>
+                  <tr class="clickable" onclick="go('form')">
+                    <td><a class="ae-link">AE-2026-0714</a></td><td>Corporate</td><td>FAS/S</td><td>Jul 2026</td><td>4</td><td class="num">฿ 1,240,000</td>
+                    <td><span class="chip chip--info">PSL Officer</span></td><td><span class="chip chip--pending">Pending</span></td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></td>
+                  </tr>
+                  <tr class="clickable" onclick="go('form')">
+                    <td><a class="ae-link">AE-2026-0709</a></td><td>Corporate</td><td>PSL/E</td><td>Jul 2026</td><td>7</td><td class="num">$ 86,500</td>
+                    <td><span class="chip chip--info">Line Manager</span></td><td><span class="chip chip--pending">Pending</span></td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></td>
+                  </tr>
+                  <tr class="clickable" onclick="go('form')">
+                    <td><a class="ae-link">AE-2026-0701</a></td><td>JV</td><td>FAS/S</td><td>Jul 2026</td><td>2</td><td class="num">฿ 355,000</td>
+                    <td><span class="chip chip--draft">—</span></td><td><span class="chip chip--draft">Draft</span></td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></td>
+                  </tr>
+                  <tr class="clickable" onclick="go('form')">
+                    <td><a class="ae-link">AE-2026-0688</a></td><td>Corporate</td><td>FAS/S</td><td>Jun 2026</td><td>5</td><td class="num">฿ 2,980,000</td>
+                    <td><span class="chip chip--approved">Completed</span></td><td><span class="chip chip--approved">Approved</span></td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></td>
+                  </tr>
+                  <tr class="clickable" onclick="go('form')">
+                    <td><a class="ae-link">AE-2026-0675</a></td><td>Corporate</td><td>EXP/D</td><td>Jun 2026</td><td>3</td><td class="num">฿ 120,400</td>
+                    <td><span class="chip chip--rejected">Returned by CC</span></td><td><span class="chip chip--rejected">Returned</span></td>
+                    <td><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- =========== SCREEN: FORM =========== -->
+        <section class="screen" id="form">
+          <div class="banner pa">
+            <span class="pa-tag">Container (Visible = Status="Draft")</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+            <div>You're editing a <b>Draft</b>. The submission cut-off for the <b>July 2026</b> accounting period is <b>31 Jul 2026, 17:00</b>.</div>
+            <span class="chip chip--draft" style="margin-left:auto">Draft · AE-2026-0714</span>
+          </div>
+
+          <!-- Request Information -->
+          <div class="card pa">
+            <span class="pa-tag">Edit form (SubmitForm) · DataSource: AccruedExpenses</span>
+            <div class="card__hd">
+              <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/></svg></div>
+              <h3>Request Information</h3>
+            </div>
+            <div class="card__bd">
+              <div class="grid-3" style="margin-bottom:16px">
+                <div class="field pa"><span class="pa-tag">Label (User().FullName)</span><label>Requester</label><input class="input" value="Vite Pongputthaporn · 67165" readonly></div>
+                <div class="field pa"><span class="pa-tag">Label (auto)</span><label>Department</label><input class="input" value="FAS/S" readonly></div>
+                <div class="field pa"><span class="pa-tag">Label (auto GUID)</span><label>Accrued Expense No.</label><input class="input" value="AE-2026-0714" readonly></div>
+              </div>
+              <div class="grid-3">
+                <div class="field pa"><span class="pa-tag">Dropdown</span><label>Budget Holder<span class="req">*</span></label>
+                  <select class="select"><option>FAS/S — Finance &amp; Accounting</option><option>PSL/E — Procurement</option><option>EXP/D — Exploration</option></select>
+                </div>
+                <div class="field pa"><span class="pa-tag">Dropdown (Choice)</span><label>Type<span class="req">*</span></label>
+                  <select class="select"><option>Corporate</option><option>Joint Venture (JV)</option><option>Operated</option></select>
+                </div>
+                <div class="field pa"><span class="pa-tag">Date picker (Month/Year)</span><label>Accounting Period<span class="req">*</span></label>
+                  <select class="select"><option>July 2026</option><option>June 2026</option><option>August 2026</option></select>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:16px;padding:12px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px">
+                <div class="switch off pa"><span class="pa-tag">Toggle</span></div>
+                <div style="flex:1"><div style="font-weight:600;font-size:13px">Import from Universal File</div><div class="hint">Bulk-load line items from the standard PTTEP Excel template instead of entering them manually.</div></div>
+                <button class="btn btn--ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download Template</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Line items -->
+          <div class="sec-title"><h2>Expenditure Line Items</h2><div class="line"></div>
+            <span class="hint">Incurred as of the accounting period &amp; not yet invoiced</span>
+          </div>
+          <div class="card pa">
+            <span class="pa-tag">Editable Gallery + collection colLines</span>
+            <div class="card__hd">
+              <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v6H3zM3 9v12h18V9M9 3v18"/></svg></div>
+              <h3>Line Items</h3><span class="sub">· 4 rows</span>
+              <div style="margin-left:auto;display:flex;gap:10px">
+                <button class="btn btn--subtle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM8 12h8M8 16h8"/></svg>Import Excel</button>
+                <button class="btn btn--subtle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11H5v9h14v-9h-4M12 3v11M8 10l4 4 4-4"/></svg>Calculate</button>
+                <button class="btn btn--primary pa"><span class="pa-tag">Collect(colLines,{...})</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add Line</button>
+              </div>
+            </div>
+            <div class="table-wrap" style="border:0;border-radius:0">
+              <table class="tbl li-tbl">
+                <thead><tr>
+                  <th style="width:34px">#</th><th style="min-width:130px">Project</th><th style="min-width:150px">Company / Profit Ctr</th>
+                  <th style="min-width:140px">Contract/PO/Inv No.</th><th style="min-width:110px">Vendor No.</th><th style="min-width:160px">Vendor Name</th>
+                  <th style="min-width:180px">Description</th><th style="min-width:130px" class="num">Amount</th><th style="width:90px">Curr.</th><th style="width:80px">Attach</th><th style="width:80px"></th>
+                </tr></thead>
+                <tbody>
+                  <tr class="editing">
+                    <td>1</td>
+                    <td><select class="cell-input"><option>PTTEP</option><option>PTTEP-S1</option><option>Arthit</option></select></td>
+                    <td><input class="cell-input" value="1001 / C100100000"></td>
+                    <td><input class="cell-input" value="PO-4500123"></td>
+                    <td><input class="cell-input" value="V-90021"></td>
+                    <td><input class="cell-input" value="Schlumberger Overseas"></td>
+                    <td><input class="cell-input" value="Well logging services"></td>
+                    <td><input class="cell-input num" value="820,000.00" style="text-align:right"></td>
+                    <td><select class="cell-input"><option>THB</option><option>USD</option></select></td>
+                    <td><button class="mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></button></td>
+                    <td><div class="li-actions"><button class="mini del"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div></td>
+                  </tr>
+                  <tr>
+                    <td>2</td><td>PTTEP-S1</td><td>1001 / C100100000</td><td>SO-77120</td><td>V-11045</td><td>Halliburton Energy</td><td>Cementing – Q3</td>
+                    <td class="num">240,000.00</td><td>THB</td>
+                    <td><span class="chip chip--info" style="font-size:10px">1 file</span></td>
+                    <td><div class="li-actions"><button class="mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><button class="mini del"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div></td>
+                  </tr>
+                  <tr>
+                    <td>3</td><td>Arthit</td><td>1002 / C100200000</td><td>INV-ADV-556</td><td>V-30877</td><td>Baker Hughes</td><td>Mud engineering</td>
+                    <td class="num">120,000.00</td><td>THB</td><td>—</td>
+                    <td><div class="li-actions"><button class="mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><button class="mini del"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div></td>
+                  </tr>
+                  <tr>
+                    <td>4</td><td>PTTEP</td><td>1001 / C100100000</td><td>PO-4500987</td><td>V-90021</td><td>Weatherford Intl</td><td>Wireline standby</td>
+                    <td class="num">60,000.00</td><td>THB</td><td>—</td>
+                    <td><div class="li-actions"><button class="mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button><button class="mini del"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button></div></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="totalbar pa"><span class="pa-tag">Label: Sum(colLines,Amount)</span>
+              <div><span class="t-lbl">Lines:</span> <span class="t-val" style="font-size:13px">4</span></div>
+              <div><span class="t-lbl">Subtotal (THB):</span> <span class="t-val">฿ 1,240,000.00</span></div>
+              <div><span class="t-lbl">Total accrued:</span> <span class="t-val" style="color:var(--primary)">฿ 1,240,000.00</span></div>
+            </div>
+          </div>
+
+          <!-- Attachments + Remark -->
+          <div class="row" style="margin-top:16px;align-items:stretch">
+            <div class="card pa" style="flex:1;min-width:320px">
+              <span class="pa-tag">Attachments control (Edit form card)</span>
+              <div class="card__hd">
+                <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.5 12 21a5 5 0 0 1-7-7l8.5-8.5a3.5 3.5 0 0 1 5 5L10 18"/></svg></div>
+                <h3>Attachments</h3><span class="sub">· PDF, JPEG, Excel · max 4 MB each</span>
+              </div>
+              <div class="card__bd" style="display:flex;flex-direction:column;gap:10px">
+                <div class="drop"><b>Drag files here</b> or <span style="color:var(--primary);font-weight:700">browse</span><div class="hint" style="margin-top:4px">Supporting invoices, POs, GR notes</div></div>
+                <div class="att"><span class="fico" style="background:#DC2626"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/></svg></span>Invoice_SLB_0714.pdf<span style="color:var(--muted);margin-left:6px">1.2 MB</span><span class="rm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span></div>
+                <div class="att"><span class="fico" style="background:#16A34A"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M9 13l6 6M15 13l-6 6"/></svg></span>GR_Note_Q3.xlsx<span style="color:var(--muted);margin-left:6px">340 KB</span><span class="rm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></span></div>
+              </div>
+            </div>
+            <div class="card pa" style="flex:1;min-width:320px">
+              <span class="pa-tag">Text input (Mode = MultiLine)</span>
+              <div class="card__hd">
+                <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                <h3>Remark</h3>
+              </div>
+              <div class="card__bd">
+                <textarea class="input" rows="6" style="resize:vertical" placeholder="Notes for approvers…">Accrual for services rendered in Jul 2026 pending vendor invoicing. Confirmed with PSL.</textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Approval workflow -->
+          <div class="sec-title"><h2>Approval Workflow</h2><div class="line"></div></div>
+          <div class="card pa">
+            <span class="pa-tag">Horizontal Gallery (stepper)</span>
+            <div class="card__bd">
+              <div class="stepper">
+                <div class="step done"><div class="node"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div><div class="s-role">Requester</div><div class="s-meta">Vite P. · 14 Jul</div></div>
+                <div class="step current"><div class="node">2</div><div class="s-role">PSL Officer</div><div class="s-meta">In review</div></div>
+                <div class="step"><div class="node">3</div><div class="s-role">PSL Manager</div><div class="s-meta">Waiting</div></div>
+                <div class="step"><div class="node">4</div><div class="s-role">Line Manager</div><div class="s-meta">Waiting</div></div>
+                <div class="step"><div class="node">5</div><div class="s-role">Budget Holder</div><div class="s-meta">Waiting</div></div>
+                <div class="step"><div class="node">6</div><div class="s-role">Cost Controller</div><div class="s-meta">Waiting</div></div>
+                <div class="step"><div class="node">7</div><div class="s-role">CC Manager</div><div class="s-meta">Waiting</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action history -->
+          <div class="sec-title"><h2>Action History</h2><div class="line"></div></div>
+          <div class="card pa">
+            <span class="pa-tag">Gallery (vertical) bound to AE_History</span>
+            <div class="card__bd">
+              <div class="timeline">
+                <div class="tl"><div class="tl-dot"><i></i></div><div class="tl-top"><span class="tl-who">Vite Pongputthaporn</span><span class="tl-act">submitted the request</span><span class="tl-time">14 Jul 2026 · 09:42</span></div></div>
+                <div class="tl"><div class="tl-dot"><i></i></div><div class="tl-top"><span class="tl-who">System</span><span class="tl-act">routed to <b>PSL Officer</b> queue</span><span class="tl-time">14 Jul 2026 · 09:42</span></div></div>
+                <div class="tl"><div class="tl-dot"><i></i></div><div class="tl-top"><span class="tl-who">Vite Pongputthaporn</span><span class="tl-act">saved a draft</span><span class="tl-time">14 Jul 2026 · 09:20</span></div><div class="tl-note">Initial entry — 4 expenditure lines added from Q3 accrual list.</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action bar -->
+          <div class="actionbar pa">
+            <span class="pa-tag">Bottom container — buttons</span>
+            <div class="save-state"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--approved)" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Draft saved automatically · 09:42</div>
+            <div class="spacer"></div>
+            <button class="btn btn--danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Cancel</button>
+            <button class="btn btn--ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Reset</button>
+            <button class="btn btn--ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM8 12h8M8 16h5"/></svg>Export Excel</button>
+            <button class="btn btn--subtle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Save Draft</button>
+            <button class="btn btn--primary pa"><span class="pa-tag">SubmitForm + Flow (approval)</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4z"/></svg>Submit for Approval</button>
+          </div>
+        </section>
+
+        <!-- =========== SCREEN: APPROVAL =========== -->
+        <section class="screen" id="approval">
+          <div class="banner" style="background:var(--pending-bg);border-color:#fde68a;color:#92400e">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <div>You have <b>5 requests</b> awaiting your approval as <b>PSL Officer</b>. Oldest is waiting <b>2 days</b>.</div>
+          </div>
+
+          <div class="row" style="align-items:flex-start">
+            <div class="card pa" style="flex:1.1;min-width:340px">
+              <span class="pa-tag">Gallery (approval queue)</span>
+              <div class="card__hd"><div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg></div><h3>Approval Queue</h3><span class="sub">· PSL Officer</span></div>
+              <div class="table-wrap" style="border:0;border-radius:0">
+                <table class="tbl">
+                  <thead><tr><th>AE No.</th><th>Requester</th><th class="num">Amount</th><th>Waiting</th></tr></thead>
+                  <tbody>
+                    <tr class="clickable" style="background:var(--primary-050)"><td><a class="ae-link">AE-2026-0714</a></td><td>Vite P.</td><td class="num">฿ 1,240,000</td><td><span class="chip chip--pending">2 d</span></td></tr>
+                    <tr class="clickable"><td><a class="ae-link">AE-2026-0712</a></td><td>Nattapong</td><td class="num">฿ 540,000</td><td><span class="chip chip--pending">1 d</span></td></tr>
+                    <tr class="clickable"><td><a class="ae-link">AE-2026-0710</a></td><td>Suda</td><td class="num">$ 42,000</td><td><span class="chip chip--info">4 h</span></td></tr>
+                    <tr class="clickable"><td><a class="ae-link">AE-2026-0708</a></td><td>Korn</td><td class="num">฿ 96,500</td><td><span class="chip chip--info">3 h</span></td></tr>
+                    <tr class="clickable"><td><a class="ae-link">AE-2026-0705</a></td><td>Ming</td><td class="num">฿ 12,000</td><td><span class="chip chip--info">1 h</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card pa" style="flex:1.4;min-width:360px">
+              <span class="pa-tag">Display form (read-only) + action buttons</span>
+              <div class="card__hd">
+                <div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+                <h3>AE-2026-0714</h3><span class="chip chip--pending" style="margin-left:auto">Pending · PSL Officer</span>
+              </div>
+              <div class="card__bd">
+                <div class="grid-3" style="margin-bottom:14px">
+                  <div class="field"><label>Requester</label><input class="input" value="Vite P. · FAS/S" readonly></div>
+                  <div class="field"><label>Type</label><input class="input" value="Corporate" readonly></div>
+                  <div class="field"><label>Period</label><input class="input" value="Jul 2026" readonly></div>
+                </div>
+                <div class="table-wrap" style="margin-bottom:14px">
+                  <table class="tbl"><thead><tr><th>Vendor</th><th>Description</th><th class="num">Amount</th></tr></thead>
+                  <tbody>
+                    <tr><td>Schlumberger</td><td>Well logging</td><td class="num">฿ 820,000</td></tr>
+                    <tr><td>Halliburton</td><td>Cementing</td><td class="num">฿ 240,000</td></tr>
+                    <tr><td>Baker Hughes</td><td>Mud engineering</td><td class="num">฿ 120,000</td></tr>
+                    <tr><td>Weatherford</td><td>Wireline standby</td><td class="num">฿ 60,000</td></tr>
+                  </tbody></table>
+                </div>
+                <div class="field" style="margin-bottom:14px"><label>Approver comment</label><textarea class="input" rows="3" placeholder="Add a note (required when returning)…"></textarea></div>
+                <div style="display:flex;gap:10px">
+                  <button class="btn btn--danger pa" style="flex:1;justify-content:center"><span class="pa-tag">Patch(Status,"Returned")</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Return</button>
+                  <button class="btn btn--ghost" style="flex:1;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>Reject</button>
+                  <button class="btn btn--primary pa" style="flex:1.4;justify-content:center"><span class="pa-tag">Patch → next step + Flow</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>Approve</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =========== SCREEN: TRACKING =========== -->
+        <section class="screen" id="tracking">
+          <div class="row" style="margin-bottom:16px">
+            <div class="kpi" style="flex:1"><div class="k">Accrued this period</div><div class="v" style="font-size:22px">฿ 4.82M</div><div class="d">32 requests</div></div>
+            <div class="kpi" style="flex:1"><div class="k">Reversed</div><div class="v" style="font-size:22px">฿ 3.10M</div><div class="d">Invoiced &amp; cleared</div></div>
+            <div class="kpi" style="flex:1"><div class="k">Outstanding</div><div class="v" style="font-size:22px;color:var(--pending)">฿ 1.72M</div><div class="d">Awaiting reversal</div></div>
+            <div class="kpi" style="flex:1"><div class="k">Aging &gt; 60d</div><div class="v" style="font-size:22px;color:var(--rejected)">฿ 210K</div><div class="d">3 items</div></div>
+          </div>
+          <div class="card pa">
+            <span class="pa-tag">Gallery + Choice filter (Accrual / Reverse)</span>
+            <div class="card__hd"><div class="section-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 5-6"/></svg></div><h3>Accrual &amp; Reverse Tracking</h3>
+              <div class="seg" style="margin-left:auto"><button class="active">Accrual</button><button>Reverse</button></div>
+            </div>
+            <div class="table-wrap" style="border:0;border-radius:0">
+              <table class="tbl">
+                <thead><tr><th>AE No.</th><th>Vendor</th><th>Booked</th><th class="num">Accrued</th><th class="num">Reversed</th><th class="num">Outstanding</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td><a class="ae-link">AE-2026-0688</a></td><td>Schlumberger</td><td>30 Jun</td><td class="num">฿ 2,980,000</td><td class="num">฿ 2,980,000</td><td class="num">฿ 0</td><td><span class="chip chip--approved">Reversed</span></td></tr>
+                  <tr><td><a class="ae-link">AE-2026-0714</a></td><td>Halliburton</td><td>14 Jul</td><td class="num">฿ 1,240,000</td><td class="num">฿ 0</td><td class="num">฿ 1,240,000</td><td><span class="chip chip--pending">Open</span></td></tr>
+                  <tr><td><a class="ae-link">AE-2026-0675</a></td><td>Baker Hughes</td><td>02 May</td><td class="num">฿ 210,000</td><td class="num">฿ 0</td><td class="num">฿ 210,000</td><td><span class="chip chip--rejected">Aging &gt;60d</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="lg"><span class="sw"></span> Blue dashed tags map each element to the <b style="color:#fff">Power Apps control</b> that builds it — toggle them off (top-right) for a clean view.</span>
+</div>
+
+<script>
+  // Mockup viewer aid only — screen switching, not app logic.
+  const titles = {
+    dashboard:['Dashboard','My Accrued Expenses'],
+    form:['Dashboard › Request','Accrued Expense — AE-2026-0714'],
+    approval:['Approvals','Approval Queue'],
+    tracking:['Tracking','Accrual & Reverse Tracking']
+  };
+  function go(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+    document.querySelectorAll('.nav__item[data-screen]').forEach(n=>n.classList.toggle('active',n.dataset.screen===id));
+    document.getElementById('crumbs').innerHTML = '<b>'+titles[id][0]+'</b>';
+    document.getElementById('pageTitle').textContent = titles[id][1];
+    document.querySelector('.content').scrollTop = 0;
+  }
+  document.querySelectorAll('.nav__item[data-screen]').forEach(n=>n.addEventListener('click',()=>go(n.dataset.screen)));
+</script>
+</body>
+</html>
