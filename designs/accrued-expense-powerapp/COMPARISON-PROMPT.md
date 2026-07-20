@@ -1,15 +1,18 @@
 # Prompt for a comparison design (paste into any AI model)
 
-> Copy everything inside the code block below into another AI model. Attach the
-> screenshot of the legacy "Accrued Expense" screen if the model accepts images.
+> Sanitized — no real company, people, employee IDs, department codes, or
+> vendor names. All example data is fictional (Contoso / Northwind / Fabrikam
+> style placeholders). Do NOT attach the original legacy screenshot unless you
+> have masked the identifying details in it first.
 
 ```
 You are a senior UI/UX designer. I am modernizing a legacy internal finance
-web system called "Accrued Expense" (used at an oil & gas company, PTTEP) and
-rebuilding it as a Microsoft Power Apps CANVAS app. I want you to redesign the
-UI to be modern, clean, and more usable, while keeping ALL existing
-functionality. Then output a single self-contained HTML file mockup so I can
-see the design (static draft — buttons do not need to work).
+web system called "Accrued Expense" and rebuilding it as a Microsoft Power Apps
+CANVAS app. I want you to redesign the UI to be modern, clean, and more usable,
+while keeping ALL existing functionality. Then output a single self-contained
+HTML file mockup so I can see the design (static draft — buttons do not need to
+work). Use only fictional placeholder data (e.g. Contoso, Northwind, Fabrikam)
+for any names, vendors, or IDs.
 
 === HARD CONSTRAINT ===
 Every element you design MUST be buildable with native Power Apps canvas
@@ -55,13 +58,13 @@ Main form sections:
 3. Modernize the patterns, for example:
    - Turn the wide scrolling table into a clean editable Gallery with a live
      running total, inline validation, and per-line attachment.
-   - Turn the 7 sidebar role items into ONE context-aware "My Approvals" queue
+   - Turn the sidebar role items into ONE context-aware "My Approvals" queue
      driven by the signed-in user's role (still supporting every role in the
      routing).
    - Visualize the approval chain as a horizontal stepper and the history as a
      vertical timeline.
-   - Replace the hardcoded "as of July 2026" text with a proper accounting-
-     period month/year picker.
+   - Replace any hardcoded period text with a proper accounting-period
+     month/year picker.
    - Add status chips (Draft/Pending/Approved/Returned), search, and KPI cards.
 4. Ensure accessibility & polish: text contrast >= 4.5:1, visible focus states,
    hover transitions 150-300ms, SVG icons (NO emoji as icons), touch targets
@@ -82,6 +85,6 @@ clear section headers.
 - After the HTML, list: (a) fields you added/changed and why, (b) the full
   Power Apps control mapping, (c) any assumptions you made.
 
-Ask me for the full off-screen column list or the official brand palette only
-if you truly need it; otherwise make reasonable assumptions and state them.
+Use fictional placeholder data throughout. Make reasonable assumptions for any
+missing detail and state them.
 ```
