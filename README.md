@@ -10,6 +10,8 @@ Master source of truth for all my Claude Code skills.
   where a skill came from.
 - See INSTALLED.md for the current catalog of available skills, grouped by
   source with each skill's exact path.
+- See WORKFLOW.md for the end-to-end development loop these skills compose
+  into, and the stages that still lack a skill.
 
 ## How to use a skill in another project
 Ask Claude Code, from within the target project repo:
