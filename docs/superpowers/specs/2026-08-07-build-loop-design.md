@@ -37,8 +37,9 @@ human gates.
 
 - Brownfield work (features inside an existing codebase).
 - Extracting the inlined gap content into standalone reusable hub skills.
-- A `Workflow`-tool layer for deterministic parallel fan-out. Deliberately
-  deferred to v2; see *Rejected alternatives*.
+- A `Workflow`-tool layer for deterministic parallel fan-out. Deferred to
+  v1.1 behind a stated trigger; see *Phase 6–7 as a swappable executor* and
+  *Verification*.
 - A full threat-modelling methodology. A lightweight security posture is
   folded into the NFR subsection of Phase 3 instead.
 
@@ -61,9 +62,13 @@ session-local rather than a portable skill folder, which fights the premise of
 this repo.
 
 **A hybrid** — orchestrator skill that hands Phases 6–7 to a `Workflow`
-script for true parallel fan-out across tickets. This is the right end state
-and is the planned v2. It is not v1 because retrofitting the workflow layer
-into a proven skill is easy, while debugging both mechanisms at once is not.
+script for true parallel fan-out across tickets. This is the right end state.
+It is not v1 because the script cannot be written well until the ticket and
+task-brief formats have settled, and those only settle in a real run.
+
+It is not, however, deferred indefinitely. Two concrete commitments make the
+upgrade cheap and give it a trigger rather than a hope; see *Phase 6–7 as a
+swappable executor* and *Verification*.
 
 ## Architecture
 
@@ -93,9 +98,12 @@ skills/vitep/build-loop/
   reference/
     skill-map.md            every stage -> skill, extracted from
                             WORKFLOW.md Part B
+  scripts/
+    gate-check              deterministic ledger + artifact validation,
+                            run before each gate
 ```
 
-Only gap phases get their own file. Phases 0, 2, 4, 5, 6 and 7 are fully
+Only gap phases get their own file under `phases/`. Phases 0, 2, 4, 5, 6 and 7 are fully
 covered by existing skills and appear as one line each in the SKILL.md
 delegation table. A run therefore loads `SKILL.md` plus only the two or three
 gap files it actually reaches.
@@ -146,6 +154,55 @@ the conversation does not. It holds:
 
 Re-invoking `build-loop` in a directory containing an incomplete run reads the
 ledger and resumes from the first unfinished phase.
+
+### The ledger is a precondition, not a record
+
+The phase row is written **on entering** a phase, before any work is done —
+not appended afterwards as a summary of what happened. The artifact path is
+filled in on exit.
+
+This inversion is what gives `gate-check` something to verify. A phase that
+was skipped leaves a row with no artifact, or no row at all where the
+following phase has one. Written the other way round — as an after-the-fact
+record — a skipped phase leaves no trace, and the ledger degrades into a
+narration of whatever the run happened to do.
+
+## Enforcement
+
+The loop's phase sequence is expressed in instructions, and instructions are
+followed by judgement rather than by machinery. The mitigation is not to
+pretend otherwise but to make the one thing that matters — *did each phase
+actually produce its artifact* — a fact on disk rather than a claim in prose.
+
+### `scripts/gate-check`
+
+A small deterministic script, run immediately before each gate fires. It reads
+`00-run.md` and asserts:
+
+- every phase row from 0 to the current phase is present;
+- every completed row names an artifact that **exists on disk** and is
+  non-empty;
+- the gate's own prerequisites are met — for Gate 2, that
+  `03-architecture.md` and `03-contracts.md` both exist; for Gate 3, that CI is
+  green and the deferred-minors ledger has been read by the final review.
+
+It exits non-zero on failure, and its output is shown to the user as part of
+the gate. Skipping Phase 3 therefore surfaces as a missing file and a failed
+check, not as a confident summary.
+
+This is the same discipline `obra/verification-before-completion` already
+demands of implementation work — evidence before assertions — applied to the
+orchestrator itself.
+
+### What enforcement cannot do
+
+`gate-check` verifies that artifacts exist, not that they are any good. A
+shallow, useless `03-architecture.md` passes it. Quality is not mechanically
+enforceable, and claiming otherwise would be the more dangerous design.
+
+That is what the gates are for, and it is why Gate 2 presents the actual ADRs
+and contracts for reading rather than a summary of them. The script guards
+against *omission*; the human guards against *emptiness*.
 
 ## The three gates
 
@@ -258,6 +315,26 @@ delegates. It does not reimplement dispatch.
 The governing rule, carried over from `WORKFLOW.md` §A.3: **artifacts move as
 files, never as pasted text.** Briefs, diffs and reports are file paths.
 
+### Phase 6–7 as a swappable executor
+
+Gate 2 to Gate 3 is the longest unattended span in the loop and covers the
+entire build. It is where drift is most likely and where a deterministic
+mechanism would pay for itself most.
+
+`SKILL.md` therefore writes Phases 6–7 against a **named executor** with a
+fixed contract, rather than inlining the orchestration:
+
+- **In:** the ticket list from `04-tickets.md`, and the run directory path.
+- **Out:** a per-ticket brief and report under `06-tasks/`, a review report
+  under `07-reviews/`, and updated rows in `00-run.md`.
+- **Guarantee:** no ticket is marked accepted without a clean review, and the
+  fix loop escalates model tier at round 4 and stops at round 5.
+
+v1's executor is `obra/subagent-driven-development`. A v1.1 executor is a
+`Workflow` script implementing the same contract with real `pipeline()`
+fan-out. Because the contract is stated rather than assumed, swapping them is
+a substitution, not a rewrite of `SKILL.md`.
+
 ## Verification
 
 **Structural check.** Every stage listed in `reference/skill-map.md` resolves
@@ -266,14 +343,27 @@ to either a skill that exists on disk or a gap file that exists in
 
 **Real check.** A dry run on a genuine small greenfield project, end to end,
 before the skill is considered done. The run must produce a complete
-`00-run.md` ledger, fire all three gates, and reach a deployed result.
+`00-run.md` ledger, pass `gate-check` at all three gates, and reach a deployed
+result.
+
+**The v1.1 trigger.** The dry run is also the decision point for the
+`Workflow` executor. If it shows phase drift anywhere in the Gate 2 → Gate 3
+span — a skipped review, a ticket accepted without one, a fix loop that ran
+past round 5, or a `gate-check` failure at Gate 3 — then building the
+`Workflow` executor is the next piece of work, not a future maybe. If the span
+holds, v1's executor stays.
 
 ## Open risks
 
-- **Model-driven discipline.** Nothing mechanically forces the phase sequence;
-  the instructions do. The ledger and the file-based artifact rule are the
-  mitigations. If phase discipline proves unreliable in practice, that is the
-  strongest argument for the v2 `Workflow` layer.
+- **Model-driven discipline.** Nothing mechanically forces the phase
+  *sequence*; the instructions do. `gate-check` and the ledger-as-precondition
+  rule reduce this to a narrower risk — omission is now caught, but shallow
+  work that satisfies the check is not. The residual exposure is concentrated
+  in the Gate 2 → Gate 3 span, which is exactly what the swappable executor
+  and its v1.1 trigger exist to address.
+- **`gate-check` becoming theatre.** A check that only ever passes teaches the
+  run to stop reading it. If the dry run never fails a gate, that is evidence
+  the assertions are too weak, not that the loop is disciplined.
 - **Deploy reliability.** Deploy targets vary widely. Anchoring the choice in a
   Phase 3 ADR helps, but Phase 9 remains the least predictable part of the
   loop and the most likely to hit hard stop 2.
