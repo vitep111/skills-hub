@@ -1,0 +1,7 @@
+# core.autocrlf is true on this machine, which rewrites LF to CRLF on
+# checkout. A CRLF shebang breaks a bash script with
+# "bad interpreter: /usr/bin/env bash^M", so every executable script in
+# this hub must stay LF regardless of platform.
+skills/**/scripts/*   text eol=lf
+skills/**/tests/*.sh  text eol=lf
+*.sh                  text eol=lf
