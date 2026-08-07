@@ -11,16 +11,36 @@ criteria, and de-risking a make-or-break unknown.
 
 ## 1. Enter phase
 
-First action, before any research starts. Append this row to `00-run.md`'s
-`## Phases` table:
+First action, before any research starts. Phase 1 owns opening its own
+ledger row, and this file can be re-entered after a crash or a context
+compaction — both expected, not exceptional — so the open must be
+idempotent. Never append blindly.
 
-```
-| 1 | open | | |
-```
+1. **Check for an existing phase 1 row** in
+   `docs/build-loop/<date>-<slug>/00-run.md`'s `## Phases` table:
 
-Then read the confirmed tier from `docs/build-loop/<date>-<slug>/00-bootstrap.md`'s
-`tier:` line. It governs Section 5 below — read it now so the rest of this
-phase runs at the right size the first time, not as a rewrite.
+   ```bash
+   grep -Eq '^\|[[:space:]]*1[[:space:]]*\|' "docs/build-loop/<date>-<slug>/00-run.md"
+   ```
+
+2. **No row found.** First pass. Append it:
+
+   ```
+   | 1 | open | | |
+   ```
+
+3. **Row found, status `open`.** A resumed pass — the prior attempt was
+   interrupted after the row was opened but before Exit (Section 6). Do not
+   append a second row. Re-do Sections 2–4's work from scratch and let Exit
+   flip this same row to `done`.
+
+4. **Row found, status `done`.** Phase 1 already completed in a prior pass.
+   Do not redo it. Stop here and proceed to Phase 2.
+
+Once past this check, read the confirmed tier from
+`docs/build-loop/<date>-<slug>/00-bootstrap.md`'s `tier:` line. It governs
+Section 5 below — read it now so the rest of this phase runs at the right
+size the first time, not as a rewrite.
 
 ---
 
@@ -69,10 +89,6 @@ exact procedure or command that measures it, and the pass/fail threshold.
 - Bad: "good error messages"
   Good: "every non-zero exit prints the offending input line number"
 
-The difference in both pairs is the same: the good version names a
-procedure ("run it on a 10MB CSV, time it" / "trigger each error path, grep
-the output for a line number") that produces a yes/no without opinion.
-
 Write the section under the exact heading `## Success metrics`, one metric
 per numbered line, in this shape:
 
@@ -106,8 +122,10 @@ If one exists:
    regardless of outcome — an inconclusive result at the timebox is still a
    result.
 3. **Throwaway code only.** Write it in the scratchpad or a temp location
-   outside the project tree, never committed, never left in the working
-   directory. Delete it once the result is recorded.
+   outside the project tree — not this repo's `.scratch/` directory, which
+   `00-bootstrap.md` reserves for issue-tracker files — never committed,
+   never left in the working directory. Delete it once the result is
+   recorded.
 4. **Record the result in `01-discovery.md`**, not as surviving code: the
    question, the timebox used, what was tried, the result, and the decision
    it drives (proceed as planned / change approach to X / escalate to the
