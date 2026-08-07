@@ -274,10 +274,17 @@ is fixed, not prose:
 idea: <one line>   date: <YYYY-MM-DD>   tier: small|standard|large
 
 ## Phases
-| phase | status | artifact |
-|-------|--------|----------|
-| 0 | done | 00-bootstrap.md |
-| 1 | open |  |
+| phase | status | artifact | reason |
+|-------|--------|----------|--------|
+| 0 | done | 00-bootstrap.md | |
+| 1 | open | | |
+
+## Deferred minors
+- <id>: <description>
+
+## Gate log
+## Decision log
+## Escalations
 ```
 
 `status` is one of `open`, `done`, `skipped`, `blocked`. `gate-check` treats
