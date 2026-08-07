@@ -1,7 +1,7 @@
 # build-loop — Design
 
 **Date:** 2026-08-07
-**Status:** Approved in outline. One open decision, marked below.
+**Status:** Approved. Ready for implementation planning.
 
 ## Problem
 
@@ -62,7 +62,7 @@ skill or reads one of five gap files. It does not reimplement agent dispatch,
 model tiering, or the fix loop — `obra/subagent-driven-development` (SDD)
 already does that, and delegating to it is the point.
 
-### OPEN DECISION — how to drive user-invoke-only skills
+### Driving user-invoke-only skills
 
 Nine skills in this hub carry `disable-model-invocation: true`, which
 `mattpocock/writing-great-skills` defines as *"only you, typing its name, can
@@ -77,7 +77,7 @@ These drive Phases 0, 2, 3, 4 and 7 — including the entire Gate 1 → Gate 2
 span, which is meant to run unattended. An orchestrator skill cannot invoke
 any of them via the Skill tool.
 
-**Recommended resolution: read, do not invoke.** `disable-model-invocation`
+**Resolution: read, do not invoke.** `disable-model-invocation`
 governs Skill-tool invocation and description-based auto-triggering. It does
 not prevent `build-loop` from *reading* `<skill>/SKILL.md` with the Read tool
 and following its procedure directly. This keeps every upstream skill
@@ -90,15 +90,12 @@ so a skill that changes upstream changes `build-loop`'s behaviour silently.
 `reference/skill-map.md` records the resolved path for each, which is what the
 structural check verifies.
 
-Alternatives considered and not recommended: inlining their content as further
-gap files (duplicates skills this hub already owns, and rots); instructing the
+Alternatives considered and rejected: inlining their content as further gap
+files (duplicates skills this hub already owns, and rots); instructing the
 user to type them at each point (adds roughly six human stops, contradicting
-the settled three-gate decision); amending the frontmatter in this hub
-(diverges from upstream, and makes those skills auto-invocable by *anything*,
-not just `build-loop` — a side effect well beyond this design's remit).
-
-**This decision is pending. The rest of the spec is written assuming
-read-not-invoke.**
+the three-gate decision); amending the frontmatter in this hub (diverges from
+upstream, and makes those skills auto-invocable by *anything*, not just
+`build-loop` — a side effect well beyond this design's remit).
 
 ### Rejected alternatives
 
