@@ -362,7 +362,7 @@ echo "gate-check OK: gate $GATE"
 - [ ] **Step 5: Run the test to verify it passes**
 
 Run: `chmod +x skills/vitep/build-loop/scripts/gate-check && bash skills/vitep/build-loop/tests/test-gate-check.sh`
-Expected: `passed: 17  failed: 0`, exit 0.
+Expected: `passed: 18  failed: 0`, exit 0.
 
 **Runtime note.** Each case calls `mktemp -d` and several subshells. Under Git
 Bash on Windows the full suite takes well over a minute; a slow run is not a
