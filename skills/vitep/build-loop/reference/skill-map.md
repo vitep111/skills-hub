@@ -15,11 +15,14 @@ within each phase section. Columns: stage id, stage name, resolution.
   exist on disk
 - the literal string **`out of scope for v1`**
 
-**Read, not invoked.** Nine of the skill names below carry
-`disable-model-invocation: true`. No phase of `build-loop`, and no skill it
-drives, may invoke them via the Skill tool. Wherever a row below resolves to
-one of these nine, the correct action is: read that skill's `SKILL.md` with
-the Read tool and follow its procedure directly.
+**Read, not invoked.** These nine skill names carry
+`disable-model-invocation: true`, whether or not they happen to appear as a
+resolution below (some are reduced out of a multi-skill Part B cell by the
+first-listed-skill rule and so don't appear in the table themselves — that
+does not lift the restriction). No phase of `build-loop`, and no skill it
+drives, may invoke any of the nine via the Skill tool. Wherever one of them
+is the right skill for a stage, the correct action is: read that skill's
+`SKILL.md` with the Read tool and follow its procedure directly.
 
 ```
 pick-ui-library   prototype   review-animations   grill-me   handoff
@@ -36,7 +39,7 @@ tool.
 | Stage | Skill | |
 |---|---|---|
 | 0.1 | Skill discipline (find & invoke skills before acting) | using-superpowers |
-| 0.2 | Environment readiness (deps installed, tests runnable) | phases/00-bootstrap.md |
+| 0.2 | Environment readiness (deps installed, tests runnable) — greenfield reading: no project dependencies exist yet to install (those are chosen at Phase 3, installed at Phase 6); at Phase 0 "ready" means the skill install set, a git repo with a commit, and tracker config | phases/00-bootstrap.md |
 | 0.3 | Session continuity / context compaction | handoff |
 
 ## Phase 1 — Discover
@@ -107,11 +110,11 @@ tool.
 | 7.1 | Requesting review / review package | requesting-code-review |
 | 7.2 | Multi-axis review (Standards × Spec) | code-review |
 | 7.3 | Domain review — UI & motion | review-animations |
-| 7.3 | Domain review — security | security-review |
-| 7.3 | Domain review — performance / accessibility | out of scope for v1 |
-| 7.4 | Receiving feedback with rigor | receiving-code-review |
-| 7.5 | Fix rounds + model escalation | subagent-driven-development |
-| 7.6 | Adjudication & minor deferral | subagent-driven-development |
+| 7.4 | Domain review — security | security-review |
+| 7.5 | Domain review — performance / accessibility | out of scope for v1 |
+| 7.6 | Receiving feedback with rigor | receiving-code-review |
+| 7.7 | Fix rounds + model escalation | subagent-driven-development |
+| 7.8 | Adjudication & minor deferral | subagent-driven-development |
 
 ## Phase 8 — Integrate
 
