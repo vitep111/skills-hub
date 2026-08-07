@@ -148,6 +148,59 @@ expect 0 "gate 3 passes with CI success and every minor triaged" "$GATE_CHECK" "
 expect 1 "missing arguments fails" "$GATE_CHECK"
 expect 1 "unknown gate fails" "$GATE_CHECK" "$d" 9
 
+# 12. The skipped branch resolves skill-map.md relative to gate-check's own
+# location, and reference/skill-map.md does not exist yet (it arrives in
+# Task 7). Copy the skill directory to a temp location with a fixture map so
+# this branch is exercised without depending on a file no task has created.
+sk="$(mktemp -d)/build-loop"
+mkdir -p "$sk/scripts" "$sk/reference"
+cp "$GATE_CHECK" "$sk/scripts/gate-check"
+chmod +x "$sk/scripts/gate-check"
+printf '| 2.4 | risk register | out of scope for v1 |\n' > "$sk/reference/skill-map.md"
+
+d=$(mkrun <<'EOF'
+| 0 | done | 00-bootstrap.md | |
+| 1 | done | 01-discovery.md | |
+| 2 | skipped | | risk register not needed |
+EOF
+)
+echo x > "$d/00-bootstrap.md"; echo x > "$d/01-discovery.md"
+expect 0 "skipped phase passes when skill-map marks a stage under it out of scope" "$sk/scripts/gate-check" "$d" 1
+
+# 13. A skipped row with an empty reason fails.
+d=$(mkrun <<'EOF'
+| 0 | done | 00-bootstrap.md | |
+| 1 | done | 01-discovery.md | |
+| 2 | skipped | | |
+EOF
+)
+echo x > "$d/00-bootstrap.md"; echo x > "$d/01-discovery.md"
+expect 1 "skipped phase with empty reason fails" "$sk/scripts/gate-check" "$d" 1
+
+# 14. A skipped row with a reason fails when the skill map has no
+# out-of-scope stage for that phase.
+sk2="$(mktemp -d)/build-loop"
+mkdir -p "$sk2/scripts" "$sk2/reference"
+cp "$GATE_CHECK" "$sk2/scripts/gate-check"
+chmod +x "$sk2/scripts/gate-check"
+printf '| 1.2 | some other stage | out of scope for v1 |\n' > "$sk2/reference/skill-map.md"
+
+d=$(mkrun <<'EOF'
+| 0 | done | 00-bootstrap.md | |
+| 1 | done | 01-discovery.md | |
+| 2 | skipped | | risk register not needed |
+EOF
+)
+echo x > "$d/00-bootstrap.md"; echo x > "$d/01-discovery.md"
+expect 1 "skipped phase fails when skill-map has no out-of-scope stage for that phase" "$sk2/scripts/gate-check" "$d" 1
+
+# 15. An unrecognized status string falls through to the default case.
+d=$(mkrun <<'EOF'
+| 0 | bogus | | |
+EOF
+)
+expect 1 "unknown status fails" "$GATE_CHECK" "$d" 0
+
 echo ""
 echo "passed: $PASS  failed: $FAIL"
 [ "$FAIL" -eq 0 ]
