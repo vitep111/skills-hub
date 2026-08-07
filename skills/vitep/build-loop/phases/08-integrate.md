@@ -208,12 +208,15 @@ approves.
 
 2. In `00-run.md`, flip phase 8's row: `| 8 | done | 08-integrate.md | |`.
 
-3. Commit:
+3. Commit. Stage the CI workflow file only if Section 4 actually created
+   one — the local-only fallback never does, since there's no hosted
+   pipeline to scaffold, and staging a path that doesn't exist fails the
+   commit outright:
 
    ```bash
    git add "docs/build-loop/<date>-<slug>/00-run.md" \
-           "docs/build-loop/<date>-<slug>/08-integrate.md" \
-           ".github/workflows/ci.yml"
+           "docs/build-loop/<date>-<slug>/08-integrate.md"
+   [ -f ".github/workflows/ci.yml" ] && git add ".github/workflows/ci.yml"
    git commit -m "chore(build-loop): phase 8 complete, branch ready to ship"
    ```
 
