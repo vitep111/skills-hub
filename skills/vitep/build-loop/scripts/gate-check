@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# Validate a build-loop run ledger before a gate fires. Exits non-zero on the
+# first failure with a specific reason, so a gate cannot pass on a skipped
+# phase, a missing artifact, or unverified CI.
+#
+# Usage: gate-check <run-dir> <gate 0|1|2|3>
+set -uo pipefail
+
+RUN_DIR="${1:-}"
+GATE="${2:-}"
+
+fail() { echo "gate-check FAIL: $*" >&2; exit 1; }
+
+[ -n "$RUN_DIR" ] && [ -n "$GATE" ] || fail "usage: gate-check <run-dir> <gate 0|1|2|3>"
+[ -d "$RUN_DIR" ] || fail "run directory not found: $RUN_DIR"
+
+LEDGER="$RUN_DIR/00-run.md"
+[ -f "$LEDGER" ] || fail "ledger not found: $LEDGER"
+
+case "$GATE" in
+  0) MAX_PHASE=0 ;;
+  1) MAX_PHASE=2 ;;
+  2) MAX_PHASE=4 ;;
+  3) MAX_PHASE=8 ;;
+  *) fail "unknown gate: $GATE (expected 0, 1, 2, or 3)" ;;
+esac
+
+SKILL_MAP="$(cd "$(dirname "$0")" && pwd)/../reference/skill-map.md"
+
+# Phase table -> "phase|status|artifact|reason" records.
+ROWS=$(awk -F'|' '
+  /^[[:space:]]*\|[[:space:]]*[0-9]+[[:space:]]*\|/ {
+    for (i = 2; i <= 5; i++) gsub(/^[ \t]+|[ \t]+$/, "", $i)
+    print $2 "|" $3 "|" $4 "|" $5
+  }' "$LEDGER")
+[ -n "$ROWS" ] || fail "no phase rows found in $LEDGER"
+
+for phase in $(seq 0 "$MAX_PHASE"); do
+  row=$(printf '%s\n' "$ROWS" | awk -F'|' -v p="$phase" '$1 == p { print; exit }')
+  [ -n "$row" ] || fail "phase $phase has no row in the ledger"
+
+  status=$(printf '%s' "$row" | cut -d'|' -f2)
+  artifact=$(printf '%s' "$row" | cut -d'|' -f3)
+  reason=$(printf '%s' "$row" | cut -d'|' -f4)
+
+  case "$status" in
+    done)
+      [ -n "$artifact" ] || fail "phase $phase is done but names no artifact"
+      path="$RUN_DIR/$artifact"
+      if [ -d "$path" ]; then
+        [ -n "$(ls -A "$path" 2>/dev/null)" ] \
+          || fail "phase $phase artifact directory is empty: $artifact"
+      elif [ -f "$path" ]; then
+        [ -s "$path" ] || fail "phase $phase artifact is empty: $artifact"
+      else
+        fail "phase $phase artifact does not exist: $artifact"
+      fi
+      ;;
+    skipped)
+      [ -n "$reason" ] || fail "phase $phase is skipped with no reason"
+      [ -f "$SKILL_MAP" ] || fail "skill-map not found: $SKILL_MAP"
+      grep -Eq "^\|[[:space:]]*$phase\.[0-9]+[[:space:]]*\|.*out of scope for v1" "$SKILL_MAP" \
+        || fail "phase $phase is skipped but no stage under it is marked out of scope in skill-map.md"
+      ;;
+    open)
+      [ "$phase" -eq "$MAX_PHASE" ] \
+        || fail "phase $phase is still open but gate $GATE requires it complete"
+      ;;
+    blocked)
+      fail "phase $phase is blocked: ${reason:-no reason recorded}"
+      ;;
+    *)
+      fail "phase $phase has unknown status: '$status'"
+      ;;
+  esac
+done
+
+case "$GATE" in
+  2)
+    for f in 03-architecture.md 03-contracts.md; do
+      [ -s "$RUN_DIR/$f" ] || fail "gate 2 requires a non-empty $f"
+    done
+    grep -Eq '^deploy-target:[[:space:]]*\S' "$RUN_DIR/03-architecture.md" \
+      || fail "gate 2 requires a 'deploy-target:' line in the 03-architecture.md ADR"
+    ;;
+  3)
+    INT="$RUN_DIR/08-integrate.md"
+    [ -s "$INT" ] || fail "gate 3 requires a non-empty 08-integrate.md"
+    grep -Eq '^ci-run:[[:space:]]*[A-Za-z0-9_.-]+[[:space:]]*$' "$INT" \
+      || fail "gate 3 requires a 'ci-run: <id>' line in 08-integrate.md"
+    grep -Eq '^ci-conclusion:[[:space:]]*success[[:space:]]*$' "$INT" \
+      || fail "gate 3 requires 'ci-conclusion: success' in 08-integrate.md"
+    minors=$(awk '/^##[[:space:]]+Deferred minors/ { f = 1; next }
+                  /^##[[:space:]]/ { f = 0 }
+                  f && /^-[[:space:]]/ { print }' "$LEDGER")
+    while IFS= read -r m; do
+      [ -n "$m" ] || continue
+      id=$(printf '%s' "$m" | sed 's/^-[[:space:]]*//' | cut -d':' -f1 | sed 's/[[:space:]]*$//')
+      [ -n "$id" ] || continue
+      grep -Eq "^triage[[:space:]]+$id:" "$INT" \
+        || fail "deferred minor '$id' has no triage verdict in 08-integrate.md"
+    done <<< "$minors"
+    ;;
+esac
+
+echo "gate-check OK: gate $GATE"

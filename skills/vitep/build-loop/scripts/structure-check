@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Assert every stage in reference/skill-map.md resolves to exactly one of:
+# a gap file that exists, a skill name, or the out-of-scope marker; and that
+# the stage list still matches WORKFLOW.md Part B, its authority.
+set -uo pipefail
+
+SKILL_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+MAP="$SKILL_DIR/reference/skill-map.md"
+ERRORS=0
+
+err() { echo "structure-check FAIL: $*" >&2; ERRORS=$((ERRORS+1)); }
+
+[ -f "$MAP" ] || { echo "structure-check FAIL: no skill-map at $MAP" >&2; exit 1; }
+
+while IFS='|' read -r _ id stage resolution _; do
+  # Trim without spawning a subshell per line (echo | tr / echo | sed is
+  # ~2 process spawns per row; under Git Bash on Windows that is slow
+  # enough to blow past any reasonable timeout on a map this size).
+  id="${id//[[:space:]]/}"
+  resolution="${resolution#"${resolution%%[![:space:]]*}"}"
+  resolution="${resolution%"${resolution##*[![:space:]]}"}"
+  case "$id" in ''|*[!0-9.]*) continue ;; esac
+  [ -n "$resolution" ] || { err "stage $id has no resolution"; continue; }
+
+  case "$resolution" in
+    "out of scope for v1") ;;
+    phases/*)
+      [ -f "$SKILL_DIR/$resolution" ] \
+        || err "stage $id names a gap file that does not exist: $resolution" ;;
+    *)
+      # A skill name. Verified against the install set at Phase 0, not here —
+      # the hub checkout has no ~/.claude/skills. Assert it is a bare name.
+      case "$resolution" in
+        */*) err "stage $id resolution '$resolution' is neither a phases/ file nor a bare skill name" ;;
+      esac ;;
+  esac
+done < "$MAP"
+
+# The map is derived from Part B; every phase Part B defines must appear.
+for phase in 0 1 2 3 4 5 6 7 8 9 10; do
+  grep -Eq "^\|[[:space:]]*$phase\.[0-9]+" "$MAP" \
+    || err "no stages recorded for phase $phase (WORKFLOW.md Part B defines it)"
+done
+
+[ "$ERRORS" -eq 0 ] || exit 1
+echo "structure-check OK"

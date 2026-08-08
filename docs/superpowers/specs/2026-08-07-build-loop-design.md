@@ -274,10 +274,17 @@ is fixed, not prose:
 idea: <one line>   date: <YYYY-MM-DD>   tier: small|standard|large
 
 ## Phases
-| phase | status | artifact |
-|-------|--------|----------|
-| 0 | done | 00-bootstrap.md |
-| 1 | open |  |
+| phase | status | artifact | reason |
+|-------|--------|----------|--------|
+| 0 | done | 00-bootstrap.md | |
+| 1 | open | | |
+
+## Deferred minors
+- <id>: <description>
+
+## Gate log
+## Decision log
+## Escalations
 ```
 
 `status` is one of `open`, `done`, `skipped`, `blocked`. `gate-check` treats
@@ -308,8 +315,12 @@ whatever the run happened to do.
 
 The run directory is created on the default branch at Phase 0. Phases 5–8
 execute inside the worktree branch, so their artifacts land there and reach
-the default branch only at the Phase 8 merge. **`gate-check` runs from the
-worktree** for Gates 2 and 3, and from the default branch for Gate 1.
+the default branch only at the Phase 8 merge.
+
+The worktree is created at **Phase 5**. Gates 0, 1 and 2 all fire before that
+— Gate 2 fires after Phase 4 — so all three run `gate-check` **from the
+default branch**. Only **Gate 3** runs it from the worktree, because Phases
+5–8's artifacts exist nowhere else until the merge.
 
 ## The gates
 
