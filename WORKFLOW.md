@@ -11,6 +11,11 @@ Read this in three parts:
 - **Part B — The Skill Map.** Which skill drives each stage.
 - **Part C — The Gaps.** Stages with no skill, ranked by how badly they hurt.
 
+> **Executable form:** `skills/vitep/build-loop/` drives this loop end to end
+> for greenfield projects. This document is its reference — Part B is the
+> authority for the stage → skill mapping, and `build-loop`'s
+> `reference/skill-map.md` is derived from it.
+
 ---
 
 ## Part A — The Methodology

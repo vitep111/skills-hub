@@ -63,3 +63,9 @@ skill came from. Path column below is relative to the repo root.
 | verification-before-completion | `skills/obra/verification-before-completion` | Use when about to claim work is complete, fixed, or passing, before committing or creating PRs — requires running verification commands and confirming output before making success claims. | 2026-08-03 |
 | writing-plans | `skills/obra/writing-plans` | Use when you have a spec or requirements for a multi-step task, before touching code. | 2026-08-03 |
 | writing-skills | `skills/obra/writing-skills` | Use when creating new skills, editing existing skills, or verifying skills work before deployment. | 2026-08-03 |
+
+## vitep — authored in this hub
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| build-loop | `skills/vitep/build-loop` | Orchestrator skill that drives a greenfield project idea through the full eleven-phase development loop (`WORKFLOW.md`) to a shipped result — invoking the hub's skills at each stage, spawning agents for the build, and stopping at four human checkpoints (scale, design, buildable package, ready to ship). | 2026-08-08 |
