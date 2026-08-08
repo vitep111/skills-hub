@@ -50,10 +50,32 @@ after the whole-branch review and CI (Phase 8, `phases/08-integrate.md`) and
 stops short of that call deliberately; Section 7 below (the executor
 contract) is what makes that stop enforceable rather than a hope.
 
-Each gate runs `scripts/gate-check <run-dir> <gate-number>` first. Non-zero
-exit blocks the gate — fix what it names, re-run, and only then present the
-package above. The check verifies artifacts exist; it cannot verify they are
-any good. That is what the human half of the gate is for.
+Each gate runs `~/.claude/skills/build-loop/scripts/gate-check <run-dir>
+<gate-number>` first — the relative form `scripts/gate-check` does not
+resolve from the target project's working directory, only from inside this
+skill's own folder. Non-zero exit blocks the gate — fix what it names,
+re-run, and only then present the package above. The check verifies
+artifacts exist; it cannot verify they are any good. That is what the human
+half of the gate is for.
+
+**Gates 1 and 2 have no owning phase file.** `phases/01-discover.md` and
+`phases/03-specify.md` both explicitly stop short of firing a gate, and
+Phase 2 (Shape) and Phase 4 (Plan) have no `phases/` file at all — so
+`SKILL.md` itself fires these two and presents their package, the same way
+`phases/00-bootstrap.md` does for Gate 0 and `phases/08-integrate.md` does
+for Gate 3:
+
+- **Gate 1**, after `gate-check <run-dir> 1` exits 0: present
+  `01-discovery.md` (prior art, success metrics) and `02-design.md` (chosen
+  approach, rejected options, scope cut), folding in `brainstorming`'s two
+  checkpoints and, on the Large tier, `wayfinder`'s scope confirmation, per
+  Section 4. Approval means: proceed to Phase 3 (Specify).
+- **Gate 2**, after `gate-check <run-dir> 2` exits 0: present `03-spec.md`,
+  `03-architecture.md` (ADRs, including the deploy-target decision) and
+  `03-contracts.md`, plus `04-plan.md` and the ticket list in `04-tickets/`,
+  folding in `to-spec`'s seam check and `to-tickets`'s breakdown approval,
+  per Section 4. Approval means: authorize the entire unattended build,
+  Phases 5–7.
 
 ---
 
@@ -101,19 +123,27 @@ directory (`docs/build-loop/<date>-<slug>/`).
 | 3 · Specify | `to-spec` (functional spec) + `phases/03-specify.md` (architecture, ADRs, contracts, NFRs) + `emil-design-eng` / `apple-design` / `ui-ux-pro-max` (UX/UI/motion) + `pick-ui-library` (dependency selection) | `03-spec.md`, `03-architecture.md`, `03-contracts.md` |
 | 4 · Plan | `wayfinder` (Large tier only) + `writing-plans` + `to-tickets` | `04-plan.md`, `04-tickets/` |
 | 5 · Orchestrate | `using-git-worktrees` + `subagent-driven-development` (workspace setup, model tiering) — see the executor contract, Section 7 | `05-orchestrate.md` |
-| 6 · Build | `subagent-driven-development`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `implement` — **the only phase fully covered by existing skills; `WORKFLOW.md` says so of no other phase** | `06-tasks/` (bridged from SDD's workspace, Section 6) |
-| 7 · Review & Fix | `requesting-code-review`, `code-review`, `review-animations`, `security-review`, `receiving-code-review`, `subagent-driven-development` (fix loop) | `07-reviews/` (bridged from SDD's workspace, Section 6) |
+| 6 · Build | `subagent-driven-development`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `implement` — **the only phase fully covered by existing skills; `WORKFLOW.md` says so of no other phase** | `06-tasks/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
+| 7 · Review & Fix | `requesting-code-review`, `code-review`, `review-animations`, `security-review`, `receiving-code-review`, `subagent-driven-development` (fix loop) | `07-reviews/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
 | 8 · Integrate | `phases/08-integrate.md` | `08-integrate.md` |
 | 9 · Release | `phases/09-release.md` (invokes `finishing-a-development-branch` for the merge, first action after Gate 3) | `09-release.md` |
 | 10 · Learn | `phases/10-learn.md` + `writing-skills` (for procedural findings) | `10-retro.md` |
 
-Phase 5 has no `phases/` file. `SKILL.md` opens its ledger row directly,
-records the chosen execution mode, model tiers, and worktree path in
-`05-orchestrate.md`, then hands the span to the named executor described in
-Section 7. Phases 2, 4, 6, 7 are covered only for the stages this hub's
-skills actually reach — their remaining ❌ stages (risk register, estimation,
-domain review beyond UI/security) are dropped per the design's Scope
-section, not silently absorbed.
+Phases 2, 4, 5, 6 and 7 have no `phases/` file. `SKILL.md` opens and closes
+their ledger rows itself, directly, following the same three-branch
+idempotency guard every phase file uses (Section 5, "Phase idempotency —
+both variants"): no row for phase N → append `| N | open | | |`; a row
+already `open` → resumed pass, do not append a second row; a row already
+`done` → skip forward. For Phase 5, `SKILL.md` records the chosen execution
+mode, model tiers, and worktree path in `05-orchestrate.md`, then hands the
+span to the named executor described in Section 7. For Phases 2, 4, 6 and 7,
+`SKILL.md` opens the row before driving the skills named in this table, and
+closes it — status `done`, artifact named — once that phase's artifact
+(`02-design.md`; `04-plan.md` and `04-tickets/`; `06-tasks/`; `07-reviews/`)
+is actually written. Phases 2, 4, 6, 7 are covered only for the stages this
+hub's skills actually reach — their remaining ❌ stages (risk register,
+estimation, domain review beyond UI/security) are dropped per the design's
+Scope section, not silently absorbed.
 
 ---
 
@@ -307,6 +337,20 @@ each entry into `00-run.md`'s `## Deferred minors` list, which is what
 exist side by side during Phases 5–7 — this is what states which one wins
 when they'd otherwise disagree.
 
+### Under direct execution
+
+Small tier's "single ticket; direct execution" (Section 10) does not run
+SDD — there is no SDD workspace, so there is nothing for the paragraphs
+above to bridge from, and none of Section 4's SDD-checkpoint folding
+applies either. The artifact contract stays identical regardless, so
+`gate-check` needs no per-tier special case: whoever executes the run
+writes the single ticket's brief and its outcome into one file directly
+under `06-tasks/`, and the Phase 7 review notes for that same ticket
+directly into one file under `07-reviews/`, then commits both exactly as
+Section 5's ledger-row-close step for those phases requires. `gate-check`
+only ever asserts these two directories are non-empty; a direct write and a
+bridged copy satisfy that identically.
+
 ---
 
 ## 7. The executor contract — Phases 5–7
@@ -320,6 +364,12 @@ and the merge exclusion below.
 
 The span is **Phases 5–7, not 6–7** — SDD's own scope begins at workspace
 setup and model tiering (Phase 5), not at dispatch (Phase 6).
+
+This contract governs Standard and Large tiers, whose adaptation is
+"subagent-driven execution." Small tier's "direct execution" does not
+invoke this executor at all — its single ticket is executed inline, and its
+`06-tasks/`/`07-reviews/` contract is Section 6's "Under direct execution"
+paragraph, not this one.
 
 - **In:** the ticket files from `04-tickets/`, and the run directory path.
 - **Out:** per-ticket briefs and reports bridged into `06-tasks/`, review
@@ -398,3 +448,8 @@ of Phases 1–2 would already have happened.
 Small tier still ships: "no deploy target" means no external host, not no
 release. Large tier's per-sub-project Gates 1/2 still fold their delegated
 skills' own checkpoints (Section 4) the same way a Standard run does.
+
+**Small tier's "direct execution" still produces `06-tasks/` and
+`07-reviews/`.** It does not run the named executor of Section 7 — see
+Section 6's "Under direct execution" for what those two directories contain
+and who writes them when there is no SDD workspace to bridge from.

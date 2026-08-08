@@ -80,6 +80,8 @@ case "$GATE" in
     for f in 03-architecture.md 03-contracts.md; do
       [ -s "$RUN_DIR/$f" ] || fail "gate 2 requires a non-empty $f"
     done
+    grep -Eq '^deploy-target:[[:space:]]*\S' "$RUN_DIR/03-architecture.md" \
+      || fail "gate 2 requires a 'deploy-target:' line in the 03-architecture.md ADR"
     ;;
   3)
     INT="$RUN_DIR/08-integrate.md"

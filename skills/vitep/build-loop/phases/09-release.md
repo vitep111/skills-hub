@@ -29,16 +29,19 @@ grep -Eq '^\|[[:space:]]*9[[:space:]]*\|' "docs/build-loop/<date>-<slug>/00-run.
 ```
 
 - **No row.** Append `| 9 | open | | |`.
-- **Row `open`.** Resumed pass. **Do not blindly redo Sections 2–4** —
-  unlike this pattern's use elsewhere, they're not document writes: merge,
-  tag, and deploy are irreversible operations with external side effects.
-  Section 2 (Merge), Section 3 (Tag), and Section 4 (Deploy) each open with
-  their own check for whether their effect already happened, and skip if
-  so. Sections 5–7 (migrations, rollback/flags, docs) have no such hazard —
-  redo them as written. Where a side-effecting step's prior state can't be
-  determined from the environment, that step is a hard stop: report what's
-  unknown and ask, rather than guess — a wrong guess here is a duplicate
-  tag or a second deploy, not a rewritten paragraph.
+- **Row `open`.** Resumed pass. **Do not blindly redo Sections 2–4 or the
+  tag step in Section 7** — unlike this pattern's use elsewhere, they're not
+  document writes: merge, tag, and deploy are irreversible operations with
+  external side effects. Section 2 (Merge) and Section 3 (the "already
+  tagged" check, which now covers the whole release since the tag is the
+  last side-effecting step) each open with their own check for whether
+  their effect already happened, and skip if so; Section 4 (Deploy) has its
+  own already-deployed check per target. Sections 5–6 (migrations,
+  rollback/flags) and the changelog/docs writing in Sections 3 and 7 have no
+  such hazard — redo them as written. Where a side-effecting step's prior
+  state can't be determined from the environment, that step is a hard stop:
+  report what's unknown and ask, rather than guess — a wrong guess here is a
+  duplicate tag or a second deploy, not a rewritten paragraph.
 - **Row `done`.** Phase 9 already ran. Stop, proceed to Phase 10.
 
 `gate-check` never asserts phase 9's row — there is no Gate 4 — but keep
@@ -60,17 +63,40 @@ one restating three different mechanisms up front.
 
 ## 2. Merge
 
-**Idempotency check, first — always, not just on a resumed pass:**
+**Idempotency check, first — always, not just on a resumed pass, and in
+this order:**
 
-```bash
-git merge-base --is-ancestor <worktree-branch> <default-branch> && echo "already merged"
-```
+1. **Recorded sha, checked first.** `finishing-a-development-branch`'s
+   default path (Option 1) deletes the worktree and runs `git branch -d`
+   once the merge succeeds — after that, the worktree branch ref is gone
+   and a ref-based check has nothing to compare against. So check
+   `00-run.md`'s `## Decision log` for a line this same section wrote on a
+   prior pass:
 
-Already merged → skip invoking `finishing-a-development-branch` again;
-record the merge commit instead of creating a new one (the merge on
-`<default-branch>` that first contains the worktree branch tip:
-`git log <default-branch> --merges --ancestry-path <worktree-branch>..<default-branch> -1 --format=%H`)
-and continue to Section 3. Not merged → proceed below.
+   ```bash
+   grep -E '^- Phase 9: merge commit ' "docs/build-loop/<date>-<slug>/00-run.md"
+   ```
+
+   Found → already merged in a prior pass; use that sha, skip invoking
+   `finishing-a-development-branch` again, and continue to Section 3. Not
+   found → the branch may still exist (an interrupted pass that merged but
+   crashed before this line was written) — fall through to the ref-based
+   check below rather than assuming not-merged.
+
+2. **Ref-based check, fallback only.** Only meaningful while the worktree
+   branch ref still exists — safe to run regardless, it simply won't match
+   once step 1 should have already caught the resume:
+
+   ```bash
+   git merge-base --is-ancestor <worktree-branch> <default-branch> && echo "already merged"
+   ```
+
+   Already merged → record the merge commit instead of creating a new one
+   (the merge on `<default-branch>` that first contains the worktree branch
+   tip: `git log <default-branch> --merges --ancestry-path
+   <worktree-branch>..<default-branch> -1 --format=%H`), write it to the
+   decision log now (the line format below), and continue to Section 3. Not
+   merged → proceed below.
 
 Via `finishing-a-development-branch` — invoke normally with the Skill tool;
 it is not on the read-not-invoke list. First action in this phase,
@@ -83,7 +109,17 @@ choice, not a second Gate 3 — approval to proceed through release already
 happened. Default to "merge locally" against the default branch Phase 0
 initialized, unless the run already shows a PR-based workflow was chosen.
 
-Record the resulting merge commit sha for Section 9's exit write.
+**Record the merge commit sha immediately, before Section 3 starts** — not
+deferred to Section 9's exit write, because that write happens at the end
+of the whole phase and a crash between the merge and that write would
+otherwise leave step 1 above with nothing to find on resume. Append one
+line to `00-run.md`'s `## Decision log`:
+
+```
+- Phase 9: merge commit <sha>
+```
+
+Carry the same sha forward into Section 9's exit write.
 
 ---
 
@@ -100,9 +136,13 @@ Record the resulting merge commit sha for Section 9's exit write.
    git rev-parse -q --verify "refs/tags/vX.Y.Z" >/dev/null && echo "already tagged"
    ```
 
-   Already tagged → this version already shipped in a prior pass; skip
-   Steps 3 and 4 below entirely and continue to Section 4 with the
-   existing `vX.Y.Z`. Not tagged → continue.
+   The tag is created at the end of Section 7, after the changelog and docs
+   it points at exist — not here — so "already tagged" means the entire
+   release (changelog, deploy, migrations, rollback, docs, and the tag
+   itself) already completed in a prior pass. Already tagged → skip
+   directly to Section 9's exit write, using the existing `vX.Y.Z`. Not
+   tagged → continue with Step 3 below, and every section that follows, in
+   order.
 3. **Generate the changelog** from the same ticket files — one bullet per
    ticket, its title plus a one-line summary of what shipped. Prepend a new
    section to `CHANGELOG.md` (create it if absent):
@@ -112,27 +152,33 @@ Record the resulting merge commit sha for Section 9's exit write.
    - <ticket title>: <one-line summary>
    ```
 
-4. **Tag** the merge commit and push the tag if a remote exists:
-
-   ```bash
-   git tag vX.Y.Z
-   git push origin vX.Y.Z   # only if a remote exists
-   ```
+   **Do not tag yet.** The tag has to point at a commit that already
+   contains this changelog and the docs Section 7 writes — for Small tier
+   that pairing is the entire shipped deliverable. Tagging here, against
+   the bare merge commit, would ship a release whose tag predates its own
+   changelog and docs. The actual `git tag` command is the last step of
+   Section 7, once both exist and are committed.
 
 ---
 
 ## 4. Deploy
 
 Execute the target named in `03-architecture.md`'s deploy-target ADR — this
-step **reads** that decision, it does not choose one. `03-architecture.md`
-is small enough to read in one call — do that, and locate the ADR whose
-**Decision** names the deploy target. Don't try to grep it out with a fixed
-line count: the heading isn't required to contain the words "deploy
-target" verbatim, and the Decision line can sit well below the heading (the
-worked example in `03-specify.md` puts it over 20 lines down) — a
-`grep -A` with a small context window can miss it, or match nothing. Quote
-the Decision verbatim into the release-plan record (Section 9's exit
-write).
+step **reads** that decision, it does not choose one. Locate it
+mechanically rather than by judgement — `03-specify.md` requires every
+deploy-target ADR to carry a machine-checkable marker line, at the start of
+a line:
+
+```bash
+grep -E '^deploy-target:[[:space:]]*\S' "docs/build-loop/<date>-<slug>/03-architecture.md"
+```
+
+The ADR containing that line is the one — Gate 2 already required this line
+to exist, so its absence here means Gate 2 passed on a defect, not that the
+line was optional. Once found, read that ADR's full **Decision** paragraph
+(the marker line names the target tersely; the paragraph above it carries
+the reasoning) and quote it verbatim into the release-plan record (Section
+9's exit write).
 
 **No such ADR found → hard stop.** Phase 3 was required to write exactly
 one ADR deciding the deploy target, never skipped, at any tier. Its absence
@@ -142,7 +188,7 @@ over here — stop and report it to the user rather than choosing a target.
 Once the Decision is found:
 
 - **"No external host"** (Small tier's documented case). No deploy step
-  runs — the tag and changelog (Section 3) and docs (Section 7) are the
+  runs — the changelog (Section 3) and the docs and tag (Section 7) are the
   shipped artifact; see Section 8.
 - **A real target** (PaaS, registry, container host, …). Before executing,
   check whether `vX.Y.Z` is already live there — a package registry's
@@ -207,7 +253,23 @@ A new project starts with none — README, API docs, usage instructions are
 - **Usage** — a short "how to run it" section for a CLI/library; folded
   into the README unless the project is large enough for its own doc.
 
-Commit the generated docs into the repository.
+Commit the changelog together with the generated docs — one commit, so the
+tag below has a single commit to point at that carries both:
+
+```bash
+git add CHANGELOG.md README.md   # plus any API docs written above
+git commit -m "docs: vX.Y.Z changelog and release docs"
+```
+
+**Tag this commit now** — not the bare merge commit from Section 2. This is
+the deferred Step 4 from Section 3: the tag has to point at a commit that
+already contains the changelog and these docs, which for Small tier is the
+entire shipped deliverable.
+
+```bash
+git tag vX.Y.Z
+git push origin vX.Y.Z   # only if a remote exists
+```
 
 ---
 
@@ -256,12 +318,14 @@ by mistake."
    | 9 | done | 09-release.md | |
    ```
 
-3. Commit:
+3. Commit — `CHANGELOG.md` and `README.md` are not re-added here; Section 7
+   already committed them in the same commit the tag points at, and
+   re-staging unchanged files is a harmless no-op but obscures which commit
+   actually carries the docs:
 
    ```bash
    git add "docs/build-loop/<date>-<slug>/00-run.md" \
-           "docs/build-loop/<date>-<slug>/09-release.md" \
-           CHANGELOG.md README.md
+           "docs/build-loop/<date>-<slug>/09-release.md"
    git commit -m "chore(build-loop): phase 9 complete, released vX.Y.Z"
    ```
 

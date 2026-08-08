@@ -117,6 +117,15 @@ For dependency choices (which library fills a "Depends on" cell), check
 Skill tool). Its list is deliberate and taste-driven; don't substitute an
 alternative unless the task genuinely isn't covered.
 
+**Record the stack's install and test commands.** This is where the stack
+is actually locked, so this is where the commands that operate it get
+written down — one line each, exact and runnable, e.g. `npm ci` / `npm
+test`, `pip install -e .` / `pytest`, `cargo build` / `cargo test`.
+`phases/08-integrate.md`'s CI scaffold and `phases/09-release.md`'s release
+steps both read these two lines verbatim from `03-architecture.md` rather
+than re-deriving them; the exit template below (Section 7) is where they're
+written.
+
 ---
 
 ## 4. ADRs
@@ -160,6 +169,21 @@ is still written as a full ADR, not shortened to a line or skipped as
 self-evident. The worked example below is exactly that case — copy it
 directly when it applies, adjusting only the specifics.
 
+**The ADR also carries one machine-checkable line.** `gate-check` cannot
+parse ADR prose — it can only assert a file is non-empty — so alongside the
+four-part narrative above, add one literal line under **Decision**, at the
+start of a line:
+
+```
+deploy-target: <one-line target>
+```
+
+e.g. `deploy-target: none — tagged release only` or `deploy-target: Fly.io`.
+Gate 2 asserts this exact line exists in `03-architecture.md`; the ADR
+narrative is for the human reading Gate 2's package, this line is for the
+script running before it. Both describe the same decision — write the line
+once the Decision sentence above it is settled, don't let them drift.
+
 <deploy-target-adr-worked-example>
 
 ```markdown
@@ -184,10 +208,13 @@ single-component tool with no persistence and no network-facing surface.
   costs nothing to operate; the tradeoff is there is no live, browsable
   artifact for a user to visit.
 
-**Decision.** No external host. Phase 9 tags the release on the merge
-commit (`git tag vX.Y.Z`) and generates docs (README, usage instructions)
-into the repository itself. No deploy step runs, no hosting credential is
-required, no uptime is owed.
+**Decision.** No external host. Phase 9 generates docs (README, usage
+instructions) and the changelog into the repository itself, commits them,
+and tags that commit (`git tag vX.Y.Z`) — not the bare merge commit, so the
+tag always carries the docs it ships alongside. No deploy step runs, no
+hosting credential is required, no uptime is owed.
+
+deploy-target: none — tagged release only
 
 **Consequences.** This makes shipping trivial and removes an entire class of
 Phase 9 failure — missing deploy credentials, host outages, deploy-target
@@ -203,7 +230,10 @@ When a real external target does apply (a web app, an API service), write
 the same four-part ADR with that target as the Decision — a hosting
 provider, a registry, a container target — and state in Consequences what
 credential or account Phase 8/9 will need, so a missing credential at
-release time is a known risk, not a surprise.
+release time is a known risk, not a surprise. Add the `deploy-target:` line
+here too, naming the same target in one line, e.g. `deploy-target: Fly.io`
+or `deploy-target: npm registry` — Gate 2 requires it regardless of which
+branch of this decision applies.
 
 ---
 
@@ -287,6 +317,9 @@ genuinely has neither.
 
    ```markdown
    # Phase 3 — Architecture
+
+   install: <command that installs the stack's dependencies>
+   test: <command that runs the stack's test suite>
 
    ## Components
    <component table from Section 3>

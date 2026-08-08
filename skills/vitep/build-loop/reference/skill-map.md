@@ -121,7 +121,7 @@ tool.
 | Stage | Skill | |
 |---|---|---|
 | 8.1 | Final whole-branch review | subagent-driven-development |
-| 8.2 | Finish branch (merge / PR / cleanup) | finishing-a-development-branch |
+| 8.2 | Finish branch (merge / PR / cleanup) | finishing-a-development-branch — executed at Phase 9, after Gate 3; never in Phase 8 |
 | 8.3 | Merge-conflict resolution | out of scope for v1 |
 | 8.4 | CI green gate | phases/08-integrate.md |
 

@@ -115,7 +115,25 @@ expect 1 "gate 2 fails without 03-architecture.md" "$GATE_CHECK" "$d" 2
 echo x > "$d/03-architecture.md"
 expect 1 "gate 2 fails without 03-contracts.md" "$GATE_CHECK" "$d" 2
 echo x > "$d/03-contracts.md"
-expect 0 "gate 2 passes with both" "$GATE_CHECK" "$d" 2
+expect 1 "gate 2 fails without a deploy-target line" "$GATE_CHECK" "$d" 2
+printf 'deploy-target: none - tagged release only\n' >> "$d/03-architecture.md"
+expect 0 "gate 2 passes with both artifacts and a deploy-target line" "$GATE_CHECK" "$d" 2
+
+# 9b. Gate 2's deploy-target assertion, isolated from the two-artifact checks.
+d=$(mkrun <<'EOF'
+| 0 | done | 00-bootstrap.md | |
+| 1 | done | 01-discovery.md | |
+| 2 | done | 02-design.md | |
+| 3 | done | 03-spec.md | |
+| 4 | open | | |
+EOF
+)
+for f in 00-bootstrap 01-discovery 02-design 03-spec; do echo x > "$d/$f.md"; done
+echo x > "$d/03-contracts.md"
+printf '# Architecture\nno deploy target line here\n' > "$d/03-architecture.md"
+expect 1 "gate 2 fails when 03-architecture.md has no deploy-target line" "$GATE_CHECK" "$d" 2
+printf '# Architecture\ndeploy-target: none - tagged release only\n' > "$d/03-architecture.md"
+expect 0 "gate 2 passes when 03-architecture.md has a deploy-target line" "$GATE_CHECK" "$d" 2
 
 # 10. Gate 3 requires CI evidence and a triage line per deferred minor.
 mkgate3() {
