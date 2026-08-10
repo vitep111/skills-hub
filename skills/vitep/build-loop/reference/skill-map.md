@@ -57,7 +57,7 @@ tool.
 | Stage | Skill | |
 |---|---|---|
 | 2.1 | Option exploration | brainstorming |
-| 2.2 | Adversarial pressure-test | grill-me |
+| 2.2 | Adversarial pressure-test | grill-me — DANGLING: its whole procedure is "run a grilling session" and no such slash command is defined in this install or the hub. Substitute a direct adversarial pass over the design and say in NOTES that you did |
 | 2.3 | Scope cut / prioritization | to-spec |
 | 2.4 | Risk register | out of scope for v1 |
 
@@ -102,6 +102,7 @@ tool.
 | 6.4 | Self-verification with evidence | verification-before-completion |
 | 6.5 | Debugging | systematic-debugging |
 | 6.6 | Spec/ticket-driven implementation | implement |
+| 6.7 | Adversarial review of plan-embedded code, before executing it | reviewing-embedded-plan-code |
 
 ## Phase 7 — Review & Fix
 
@@ -110,7 +111,7 @@ tool.
 | 7.1 | Requesting review / review package | requesting-code-review |
 | 7.2 | Multi-axis review (Standards × Spec) | code-review |
 | 7.3 | Domain review — UI & motion | review-animations |
-| 7.4 | Domain review — security | security-review |
+| 7.4 | Domain review — security | security-review — BROKEN IN THIS LOOP: it diffs against the origin remote, and Phase 0 deliberately creates none until Phase 8, so it fails every run. Conduct the security review manually (trust boundary, injection surface, ReDoS, supply chain) and record it in 07-reviews. Do NOT create a remote early to satisfy it |
 | 7.5 | Domain review — performance / accessibility | out of scope for v1 |
 | 7.6 | Receiving feedback with rigor | receiving-code-review |
 | 7.7 | Fix rounds + model escalation | subagent-driven-development |

@@ -208,8 +208,17 @@ Legend: ✅ covered · 🟡 partial · ❌ **gap — no skill**
 | Self-verification with evidence | `obra/verification-before-completion` | ✅ |
 | Debugging | `obra/systematic-debugging` | ✅ |
 | Spec/ticket-driven implementation | `mattpocock/implement` | ✅ |
+| Adversarial review of plan-embedded code, before executing it | `vitep/reviewing-embedded-plan-code` | ✅ |
 
 **Phase 6 is fully covered — it is the strongest part of this hub.**
+
+The last stage was added after a real `build-loop` run: the plan embedded a
+complete RFC 4180 parser, Phase 6 transcribed it verbatim under TDD, and every
+test passed — because the same author wrote both the code and the tests that
+were meant to check it. A Critical bug survived to Phase 7's review and a
+second, more severe one to Phase 8's. Executing pre-written plan code as
+literal TDD steps proves only that it satisfies the tests the plan chose to
+write.
 
 ### Phase 7 — Review & Fix
 

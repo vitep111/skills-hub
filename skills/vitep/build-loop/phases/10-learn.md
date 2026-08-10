@@ -224,9 +224,29 @@ the hub.
    git commit -m "chore(build-loop): phase 10 complete, retro recorded"
    ```
 
+4. **Remove the worktree.** Phase 5 created one and Phase 9's merge does not
+   always remove it — a real run finished with the worktree and its branch
+   still on disk, holding a stale copy of every run artifact. From the main
+   repository root, once the merge is confirmed landed:
+
+   ```bash
+   git worktree list                       # confirm which one this run made
+   git worktree remove <worktree-path>     # add --force only if it refuses
+   git worktree prune
+   git branch -d <worktree-branch>         # -d, never -D: it must be merged
+   ```
+
+   If `git branch -d` refuses, the branch is **not** merged — stop and report
+   that, rather than reaching for `-D`. A refusal here means Phase 9 did not
+   finish what it claimed to.
+
+   Skip this step, and say so, if Phase 9's merge step already removed the
+   worktree — `git worktree list` showing only the main repository is the
+   evidence.
+
 No `gate-check` call closes this phase — there is no Gate 4, and Gate 3
 already fired before Phase 9 ran. This is the last commit `build-loop`
 makes. Report to the user: the metric check results, the retro findings,
-and what Section 4 did with each procedural finding — including, explicitly,
+what Section 4 did with each procedural finding — including, explicitly,
 anything written under `## For manual transfer` because the hub path wasn't
-found.
+found — and whether the worktree was removed here or already gone.

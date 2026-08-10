@@ -58,6 +58,31 @@ re-run, and only then present the package above. The check verifies
 artifacts exist; it cannot verify they are any good. That is what the human
 half of the gate is for.
 
+### Approval may be conditional
+
+A gate has three outcomes, not two: rejected, approved, or **approved with
+conditions**. The third is the common one in practice — a reviewer who
+spots something fixable rarely wants to halt the whole run over it.
+
+When the human attaches conditions to an approval:
+
+1. **Record them in the ledger's Gate log, on the approval line**, not only
+   in the conversation. Write each condition in full. A condition that lives
+   only in the chat is lost the moment the context compacts, which on a run
+   this long is a matter of when, not if.
+2. **Discharge each one in the phase where it belongs**, and append a
+   Decision log entry naming the condition and how it was discharged.
+3. **Do not carry a condition silently past the phase that should have
+   closed it.** If a condition cannot be met, that is an escalation — say
+   so and stop, rather than proceeding and hoping it stops mattering.
+
+If the human approves with no conditions, record that too — *"approved, no
+conditions"* — so a later reader can tell "none were given" apart from "some
+were given and went missing." This distinction is not decoration: a real run
+reached Gate 2 with two Gate-1 conditions unmet, and only an explicit check
+of the Gate 1 log established that none had ever been attached, rather than
+the loop having dropped them.
+
 **Gates 1 and 2 have no owning phase file.** `phases/01-discover.md` and
 `phases/03-specify.md` both explicitly stop short of firing a gate, and
 Phase 2 (Shape) and Phase 4 (Plan) have no `phases/` file at all — so
@@ -123,11 +148,26 @@ directory (`docs/build-loop/<date>-<slug>/`).
 | 3 · Specify | `to-spec` (functional spec) + `phases/03-specify.md` (architecture, ADRs, contracts, NFRs) + `emil-design-eng` / `apple-design` / `ui-ux-pro-max` (UX/UI/motion) + `pick-ui-library` (dependency selection) | `03-spec.md`, `03-architecture.md`, `03-contracts.md` |
 | 4 · Plan | `wayfinder` (Large tier only) + `writing-plans` + `to-tickets` | `04-plan.md`, `04-tickets/` |
 | 5 · Orchestrate | `using-git-worktrees` + `subagent-driven-development` (workspace setup, model tiering) — see the executor contract, Section 7 | `05-orchestrate.md` |
-| 6 · Build | `subagent-driven-development`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `implement` — **the only phase fully covered by existing skills; `WORKFLOW.md` says so of no other phase** | `06-tasks/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
+| 6 · Build | `subagent-driven-development`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `implement` — **the only phase fully covered by existing skills; `WORKFLOW.md` says so of no other phase**. Plus `reviewing-embedded-plan-code` **before** transcribing any complete algorithmic code the plan wrote out — see below | `06-tasks/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
 | 7 · Review & Fix | `requesting-code-review`, `code-review`, `review-animations`, `security-review`, `receiving-code-review`, `subagent-driven-development` (fix loop) | `07-reviews/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
 | 8 · Integrate | `phases/08-integrate.md` | `08-integrate.md` |
 | 9 · Release | `phases/09-release.md` (invokes `finishing-a-development-branch` for the merge, first action after Gate 3) | `09-release.md` |
 | 10 · Learn | `phases/10-learn.md` + `writing-skills` (for procedural findings) | `10-retro.md` |
+
+**Plan-embedded code is unreviewed code.** When `04-plan.md` writes out
+complete, non-trivial algorithmic implementation — a parser, a state
+machine, a tokenizer, concurrency logic — executing it as literal TDD steps
+proves only that it satisfies the tests the plan itself chose to write. The
+same author wrote both, so a blind spot in one is a blind spot in the other.
+Before transcribing that code in Phase 6, run
+`reviewing-embedded-plan-code` against it.
+
+This is not hypothetical. In the run that produced this instruction, a
+hand-rolled RFC 4180 parser was transcribed verbatim and passed every test
+at every step; Phase 7's independent reviewer then found a Critical bug that
+silently corrupted values and dropped rows, and Phase 8's whole-branch pass
+found a second one causing silent data corruption. Both were present in the
+plan at Gate 2, where the human had already approved it.
 
 Phases 2, 4, 5, 6 and 7 have no `phases/` file. `SKILL.md` opens and closes
 their ledger rows itself, directly, following the same three-branch
@@ -230,6 +270,9 @@ idea: <one line>   date: <YYYY-MM-DD>   tier: small|standard|large
 - <id>: <description>
 
 ## Gate log
+- Gate <N> (<name>): approved | approved with conditions | rejected
+  — conditions: <each in full, or "none">
+
 ## Decision log
 ## Escalations
 ```
