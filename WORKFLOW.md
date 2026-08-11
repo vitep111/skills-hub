@@ -162,7 +162,8 @@ Legend: ✅ covered · 🟡 partial · ❌ **gap — no skill**
 
 | Stage | Skill | |
 |---|---|---|
-| Option exploration | `obra/brainstorming` · `emilkowalski/prototype` (UI variants) | ✅ |
+| Option exploration | `obra/brainstorming` | ✅ |
+| UI prototype, throwaway | `emilkowalski/prototype` | ✅ |
 | Adversarial pressure-test | `mattpocock/grill-me` | ✅ |
 | Scope cut / prioritization | `mattpocock/to-spec` (Out of Scope section) | 🟡 |
 | Risk register | — | ❌ |

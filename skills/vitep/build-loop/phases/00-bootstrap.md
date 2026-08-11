@@ -20,21 +20,15 @@ else. Greenfield means the target directory starts empty, so `build-loop`
 and every skill it drives must already live in the global skills directory,
 not this hub.
 
-Verbatim from the design spec's *Location and install set*:
-
-```
-~/.claude/skills/
-  build-loop/
-  brainstorming/            grill-me/          to-spec/
-  writing-plans/            to-tickets/        wayfinder/
-  subagent-driven-development/                 implement/
-  dispatching-parallel-agents/                 test-driven-development/
-  systematic-debugging/     verification-before-completion/
-  requesting-code-review/   receiving-code-review/
-  finishing-a-development-branch/              using-git-worktrees/
-  writing-skills/           handoff/           code-review/
-  pick-ui-library/
-```
+**The install set is derived from `reference/skill-map.md`, not listed here by
+hand.** This section previously carried a hardcoded list of 21 names taken
+verbatim from the design spec. The map then gained rows the list never
+learned about, and six skills the loop actually resolves — one of which had
+never been installed at all — would have reached their phase mid-run before
+anyone discovered they were absent. That defeats the entire purpose of a
+Phase 0 check, which is to fail at minute one rather than hour three. A
+hardcoded list guarantees this drift eventually; deriving the check
+eliminates it.
 
 **Flat, not nested.** SDD dispatches its final reviewer via a relative
 sibling path, `../requesting-code-review/code-reviewer.md`, which resolves
@@ -45,14 +39,37 @@ owner directories are dropped.
 Run:
 
 ```bash
-for name in build-loop brainstorming grill-me to-spec writing-plans to-tickets wayfinder \
-            subagent-driven-development implement dispatching-parallel-agents \
-            test-driven-development systematic-debugging verification-before-completion \
-            requesting-code-review receiving-code-review finishing-a-development-branch \
-            using-git-worktrees writing-skills handoff code-review pick-ui-library; do
+MAP=~/.claude/skills/build-loop/reference/skill-map.md
+test -f "$MAP" || echo "MISSING: build-loop (its own reference/skill-map.md is absent)"
+
+{ awk -F'|' '$2 ~ /^[[:space:]]*[0-9]+\.[0-9]+[[:space:]]*$/ {
+      r = $4
+      sub(/ —.*/, "", r)                                # drop trailing " — ANNOTATION"
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", r)
+      print r
+    }' "$MAP" | grep -vE '^phases/|^out of scope for v1$|^security-review$'
+  printf 'build-loop\ndispatching-parallel-agents\n'
+} | sort -u | while read -r name; do
   test -f ~/.claude/skills/"$name"/SKILL.md || echo "MISSING: $name"
 done
 ```
+
+Three resolutions are filtered out deliberately, and each exclusion is load-bearing:
+
+- **`phases/…`** — this skill's own gap files, not skills. `structure-check`
+  already asserts they exist on disk.
+- **`out of scope for v1`** — stages the design dropped; nothing to install.
+- **`security-review`** — a Claude Code built-in, not a hub skill, so it never
+  exists under `~/.claude/skills/`. Including it would print `MISSING:` and
+  hard-stop **every** run. Map row 7.4 already records that it is broken in
+  this loop and routes around it with a manual security pass.
+
+Two names are added that no stage resolves to: **`build-loop`** itself, which
+the map never names, and **`dispatching-parallel-agents`**, which
+`subagent-driven-development` reaches for internally during Phases 5–7.
+
+The set currently derives to 27 skills. Do not hardcode that number anywhere —
+it moves whenever the map does, which is the entire point.
 
 If nothing printed, every skill is present — continue to Section 2.
 
@@ -86,6 +103,21 @@ Report to the user, for **every** missing name printed above:
 | handoff | skills/mattpocock/handoff/ |
 | code-review | skills/mattpocock/code-review/ |
 | pick-ui-library | skills/emilkowalski/pick-ui-library/ |
+| prototype | skills/emilkowalski/prototype/ |
+| emil-design-eng | skills/emilkowalski/emil-design-eng/ |
+| review-animations | skills/emilkowalski/review-animations/ |
+| executing-plans | skills/obra/executing-plans/ |
+| using-superpowers | skills/obra/using-superpowers/ |
+| reviewing-embedded-plan-code | skills/vitep/reviewing-embedded-plan-code/ |
+
+Because the set is derived, a future map edit can name a skill this table has
+not learned yet. If a `MISSING:` name is absent from the table above, locate
+it rather than guessing — the owner directory is not predictable from the
+name:
+
+```bash
+find "<SKILLS_HUB>/skills" -mindepth 2 -maxdepth 2 -name "<missing-name>" -type d
+```
 
 The hub itself lives at `SKILLS_HUB` (default `C:\Claude\skills-hub`; see
 Section 5 — at Phase 0 this hard stop can fire before Section 5 runs, so
@@ -96,9 +128,10 @@ directory into the global install. Then stop this run entirely and ask the
 user to re-invoke `build-loop` once the copy is done. Do not proceed within
 this session on an incomplete install set.
 
-**Read, not invoke.** Seven of the 21 skills above
+**Read, not invoke.** Nine of the derived set
 (`grill-me`, `handoff`, `implement`, `to-spec`, `to-tickets`, `wayfinder`,
-`pick-ui-library`) carry `disable-model-invocation: true` — no skill,
+`pick-ui-library`, `prototype`, `review-animations`) carry
+`disable-model-invocation: true` — no skill,
 including `build-loop`, may invoke them via the Skill tool. Wherever a later
 phase drives one of them, it reads that skill's `SKILL.md` with the Read
 tool and follows its procedure directly. Phase 0 only verifies these are

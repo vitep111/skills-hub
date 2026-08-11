@@ -144,7 +144,7 @@ directory (`docs/build-loop/<date>-<slug>/`).
 |---|---|---|
 | 0 · Bootstrap | `phases/00-bootstrap.md` | `00-bootstrap.md` |
 | 1 · Discover | `phases/01-discover.md` | `01-discovery.md` |
-| 2 · Shape | `brainstorming`, `grill-me`, `to-spec` (scope-cut section only) | `02-design.md` |
+| 2 · Shape | `brainstorming`, `prototype` (user-facing projects only — see below), `grill-me`, `to-spec` (scope-cut section only) | `02-design.md` |
 | 3 · Specify | `to-spec` (functional spec) + `phases/03-specify.md` (architecture, ADRs, contracts, NFRs) + `emil-design-eng` / `apple-design` / `ui-ux-pro-max` (UX/UI/motion) + `pick-ui-library` (dependency selection) | `03-spec.md`, `03-architecture.md`, `03-contracts.md` |
 | 4 · Plan | `wayfinder` (Large tier only) + `writing-plans` + `to-tickets` | `04-plan.md`, `04-tickets/` |
 | 5 · Orchestrate | `using-git-worktrees` + `subagent-driven-development` (workspace setup, model tiering) — see the executor contract, Section 7 | `05-orchestrate.md` |
@@ -153,6 +153,26 @@ directory (`docs/build-loop/<date>-<slug>/`).
 | 8 · Integrate | `phases/08-integrate.md` | `08-integrate.md` |
 | 9 · Release | `phases/09-release.md` (invokes `finishing-a-development-branch` for the merge, first action after Gate 3) | `09-release.md` |
 | 10 · Learn | `phases/10-learn.md` + `writing-skills` (for procedural findings) | `10-retro.md` |
+
+**The Phase 2 prototype is a requirements instrument, not a deliverable.**
+It runs only on user-facing projects — skip the stage outright when there is
+no interface, and say in `02-design.md` that you did. `prototype` is on the
+read-not-invoke list (Section 2), so it is read and followed, never invoked.
+Two distinct modes, answering two different questions:
+
+- **Variants behind a live picker** — settles visual direction. This is what
+  `prototype`'s own procedure does.
+- **One full-lifecycle walkthrough, every state reachable** — settles
+  *requirements*. Build it with fake data in a single self-contained file,
+  include a control that jumps directly to any state, and make the ugly
+  states reachable (rejected-with-comments, returned-and-resubmitted,
+  delegated, escalated). Happy-path-only prototypes discover nothing.
+
+Never build either mode in the project's real framework against a mocked
+API. That version does not get thrown away — it gets extended, and its
+fake-data shortcuts ship. The deliverable is the list of requirements the
+prototype exposed, written into `02-design.md` and carried to Gate 1; the
+prototype itself is deleted before Phase 3 begins.
 
 **Plan-embedded code is unreviewed code.** When `04-plan.md` writes out
 complete, non-trivial algorithmic implementation — a parser, a state

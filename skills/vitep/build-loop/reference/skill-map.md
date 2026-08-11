@@ -16,10 +16,11 @@ within each phase section. Columns: stage id, stage name, resolution.
 - the literal string **`out of scope for v1`**
 
 **Read, not invoked.** These nine skill names carry
-`disable-model-invocation: true`, whether or not they happen to appear as a
-resolution below (some are reduced out of a multi-skill Part B cell by the
-first-listed-skill rule and so don't appear in the table themselves — that
-does not lift the restriction). No phase of `build-loop`, and no skill it
+`disable-model-invocation: true`. All nine now appear as a resolution below;
+should a future Part B edit reduce one out of a multi-skill cell so that it
+no longer appears here, the restriction still binds wherever that skill is
+actually used — the flag travels with the skill, not with this table. No
+phase of `build-loop`, and no skill it
 drives, may invoke any of the nine via the Skill tool. Wherever one of them
 is the right skill for a stage, the correct action is: read that skill's
 `SKILL.md` with the Read tool and follow its procedure directly.
@@ -57,9 +58,10 @@ tool.
 | Stage | Skill | |
 |---|---|---|
 | 2.1 | Option exploration | brainstorming |
-| 2.2 | Adversarial pressure-test | grill-me — DANGLING: its whole procedure is "run a grilling session" and no such slash command is defined in this install or the hub. Substitute a direct adversarial pass over the design and say in NOTES that you did |
-| 2.3 | Scope cut / prioritization | to-spec |
-| 2.4 | Risk register | out of scope for v1 |
+| 2.2 | UI prototype, throwaway — two distinct modes: variants behind a live picker to settle visual direction, and one full-lifecycle walkthrough with every state reachable to discover requirements the data model does not reveal. Fake data only, never the real framework. Its deliverable is the requirements it exposes, written into 02-design.md; the prototype itself is deleted. Skip the stage entirely when the project has no user interface | prototype |
+| 2.3 | Adversarial pressure-test | grill-me — DANGLING: its whole procedure is "run a grilling session" and no such slash command is defined in this install or the hub. Substitute a direct adversarial pass over the design and say in NOTES that you did |
+| 2.4 | Scope cut / prioritization | to-spec |
+| 2.5 | Risk register | out of scope for v1 |
 
 ## Phase 3 — Specify
 
