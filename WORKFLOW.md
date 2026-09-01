@@ -228,7 +228,8 @@ write.
 |---|---|---|
 | Requesting review / review package | `obra/requesting-code-review` · SDD `scripts/review-package` | ✅ |
 | Multi-axis review (Standards × Spec) | `mattpocock/code-review` | ✅ |
-| Domain review — UI & motion | `emilkowalski/review-animations` · `improve-animations` · `find-animation-opportunities` | ✅ |
+| Domain review — UI & motion | `emilkowalski/review-animations` (grades existing animation code against a craft bar) | ✅ |
+| Domain review — missing-animation discovery | `emilkowalski/find-animation-opportunities` (sweeps for moments with no motion that should have one; proposes exact recipes, implements nothing — `improve-animations` is the closest related tool but is not wired into this loop) | ✅ |
 | Domain review — security | *built-in* `security-review` | 🟡 |
 | Domain review — performance / accessibility | — | ❌ |
 | Domain review — UI/UX craft & anti-generic patterns | `pbakaus/impeccable` (`critique`/`audit`) | ✅ |

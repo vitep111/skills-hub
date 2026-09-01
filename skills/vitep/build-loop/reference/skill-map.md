@@ -113,13 +113,14 @@ tool.
 |---|---|---|
 | 7.1 | Requesting review / review package | requesting-code-review |
 | 7.2 | Multi-axis review (Standards × Spec) | code-review |
-| 7.3 | Domain review — UI & motion | review-animations |
+| 7.3 | Domain review — UI & motion (grades existing animation code against a craft bar) | review-animations |
 | 7.4 | Domain review — security | security-review — BROKEN IN THIS LOOP: it diffs against the origin remote, and Phase 0 deliberately creates none until Phase 8, so it fails every run. Conduct the security review manually (trust boundary, injection surface, ReDoS, supply chain) and record it in 07-reviews. Do NOT create a remote early to satisfy it |
 | 7.5 | Domain review — performance / accessibility | out of scope for v1 |
 | 7.6 | Receiving feedback with rigor | receiving-code-review |
 | 7.7 | Fix rounds + model escalation | subagent-driven-development |
 | 7.8 | Adjudication & minor deferral | subagent-driven-development |
 | 7.9 | Domain review — UI/UX craft & anti-generic patterns (`critique` for heuristic scoring, `audit` for a11y/perf/responsive) — complements 7.3's motion-only review-animations pass; findings feed the same fix loop (7.7) | impeccable |
+| 7.10 | Missing-animation discovery — sweeps the built UI for moments that have no motion but should, and proposes exact recipes for each; never implements. Read-only, distinct from 7.3 (which reviews motion that already exists, not motion that's absent). Its proposals feed the same fix loop as every other Phase 7 finding (7.7) | find-animation-opportunities |
 
 ## Phase 8 — Integrate
 
