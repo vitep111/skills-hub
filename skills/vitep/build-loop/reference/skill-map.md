@@ -58,10 +58,11 @@ tool.
 | Stage | Skill | |
 |---|---|---|
 | 2.1 | Option exploration | brainstorming |
-| 2.2 | UI prototype, throwaway — two distinct modes: variants behind a live picker to settle visual direction, and one full-lifecycle walkthrough with every state reachable to discover requirements the data model does not reveal. Fake data only, never the real framework. Its deliverable is the requirements it exposes, written into 02-design.md; the prototype itself is deleted. Skip the stage entirely when the project has no user interface | prototype |
+| 2.2 | UI prototype, throwaway — two distinct modes: variants behind a live picker to settle visual direction, and one full-lifecycle walkthrough with every state reachable to discover requirements the data model does not reveal. Fake data only, never the real framework. Each variant is built against the visual-world direction and taste skill settled in 2.6, so what the user sees is real craft, not a generic default. Its deliverable is the requirements it exposes, written into 02-design.md; the prototype itself is deleted. Skip the stage entirely when the project has no user interface | prototype |
 | 2.3 | Adversarial pressure-test | grill-me — DANGLING: its whole procedure is "run a grilling session" and no such slash command is defined in this install or the hub. Substitute a direct adversarial pass over the design and say in NOTES that you did |
 | 2.4 | Scope cut / prioritization | to-spec |
 | 2.5 | Risk register | out of scope for v1 |
+| 2.6 | Design craft / visual-world direction, anti-generic guardrails — run before building 2.2's prototype variants. Follow impeccable's `shape` (discovery brief, no code) then `new-work` (visual-world / concept choice) to settle the direction each variant is built against, and load `craft-floor.md` immediately before building any of them. Pick the taste skill that supplies the actual palette/type/motion rules: default `leonxlnx/design-taste-frontend` (infers style from the brief); use a named archetype skill instead (`minimalist-ui`, `industrial-brutalist-ui`, `high-end-visual-design`, etc.) when the user asks for a specific look. Record the chosen direction and taste skill in 02-design.md so Phase 3 and Phase 7 apply the same one | impeccable |
 
 ## Phase 3 — Specify
 
@@ -71,7 +72,7 @@ tool.
 | 3.2 | Non-functional requirements (perf, security, a11y, compliance) | phases/03-specify.md |
 | 3.3 | Architecture & ADRs | phases/03-specify.md |
 | 3.4 | Data model & API contracts | phases/03-specify.md |
-| 3.5 | UX / UI / motion design | emil-design-eng |
+| 3.5 | UX / UI / motion design — settled by emil-design-eng / apple-design / ui-ux-pro-max per SKILL.md's delegation table, then run impeccable's `critique` and `polish` against the result as a craft pass before it's formalized into 03-spec.md, using the same visual direction and taste skill 2.6 recorded | emil-design-eng |
 | 3.6 | Dependency & library selection | pick-ui-library |
 
 ## Phase 4 — Plan
@@ -118,6 +119,7 @@ tool.
 | 7.6 | Receiving feedback with rigor | receiving-code-review |
 | 7.7 | Fix rounds + model escalation | subagent-driven-development |
 | 7.8 | Adjudication & minor deferral | subagent-driven-development |
+| 7.9 | Domain review — UI/UX craft & anti-generic patterns (`critique` for heuristic scoring, `audit` for a11y/perf/responsive) — complements 7.3's motion-only review-animations pass; findings feed the same fix loop (7.7) | impeccable |
 
 ## Phase 8 — Integrate
 

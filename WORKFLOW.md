@@ -163,10 +163,11 @@ Legend: ✅ covered · 🟡 partial · ❌ **gap — no skill**
 | Stage | Skill | |
 |---|---|---|
 | Option exploration | `obra/brainstorming` | ✅ |
-| UI prototype, throwaway | `emilkowalski/prototype` | ✅ |
+| UI prototype, throwaway | `emilkowalski/prototype`, styled via `leonxlnx/design-taste-frontend` (default) or a named archetype taste skill | ✅ |
 | Adversarial pressure-test | `mattpocock/grill-me` | ✅ |
 | Scope cut / prioritization | `mattpocock/to-spec` (Out of Scope section) | 🟡 |
 | Risk register | — | ❌ |
+| Design craft / visual-world direction, anti-generic guardrails | `pbakaus/impeccable` (`shape` + `new-work` + craft-floor) | ✅ |
 
 ### Phase 3 — Specify
 
@@ -176,7 +177,7 @@ Legend: ✅ covered · 🟡 partial · ❌ **gap — no skill**
 | Non-functional requirements (perf, security, a11y, compliance) | — | ❌ |
 | **Architecture & ADRs** | — | ❌ |
 | **Data model & API contracts** | — | ❌ |
-| UX / UI / motion design | `emilkowalski/emil-design-eng` · `apple-design` · `animation-vocabulary` · `nextlevelbuilder/ui-ux-pro-max` | ✅ |
+| UX / UI / motion design | `emilkowalski/emil-design-eng` · `apple-design` · `animation-vocabulary` · `nextlevelbuilder/ui-ux-pro-max` · `pbakaus/impeccable` (`critique`/`polish` pass) | ✅ |
 | Dependency & library selection | `emilkowalski/pick-ui-library` | ✅ |
 
 ### Phase 4 — Plan
@@ -230,6 +231,7 @@ write.
 | Domain review — UI & motion | `emilkowalski/review-animations` · `improve-animations` · `find-animation-opportunities` | ✅ |
 | Domain review — security | *built-in* `security-review` | 🟡 |
 | Domain review — performance / accessibility | — | ❌ |
+| Domain review — UI/UX craft & anti-generic patterns | `pbakaus/impeccable` (`critique`/`audit`) | ✅ |
 | Receiving feedback with rigor | `obra/receiving-code-review` | ✅ |
 | Fix rounds + model escalation | `obra/subagent-driven-development` (fix loop) | ✅ |
 | Adjudication & minor deferral | `obra/subagent-driven-development` | ✅ |

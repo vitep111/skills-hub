@@ -144,12 +144,12 @@ directory (`docs/build-loop/<date>-<slug>/`).
 |---|---|---|
 | 0 · Bootstrap | `phases/00-bootstrap.md` | `00-bootstrap.md` |
 | 1 · Discover | `phases/01-discover.md` | `01-discovery.md` |
-| 2 · Shape | `brainstorming`, `prototype` (user-facing projects only — see below), `grill-me`, `to-spec` (scope-cut section only) | `02-design.md` |
-| 3 · Specify | `to-spec` (functional spec) + `phases/03-specify.md` (architecture, ADRs, contracts, NFRs) + `emil-design-eng` / `apple-design` / `ui-ux-pro-max` (UX/UI/motion) + `pick-ui-library` (dependency selection) | `03-spec.md`, `03-architecture.md`, `03-contracts.md` |
+| 2 · Shape | `brainstorming`, `impeccable` (`shape` + `new-work` + craft-floor — visual-world direction, before the prototype is built), a taste skill (default `design-taste-frontend`; a named archetype skill when the user asks for a specific look), `prototype` (user-facing projects only — see below), `grill-me`, `to-spec` (scope-cut section only) | `02-design.md` |
+| 3 · Specify | `to-spec` (functional spec) + `phases/03-specify.md` (architecture, ADRs, contracts, NFRs) + `emil-design-eng` / `apple-design` / `ui-ux-pro-max` (UX/UI/motion) + `impeccable` (`critique`/`polish` craft pass, same direction as Phase 2) + `pick-ui-library` (dependency selection) | `03-spec.md`, `03-architecture.md`, `03-contracts.md` |
 | 4 · Plan | `wayfinder` (Large tier only) + `writing-plans` + `to-tickets` | `04-plan.md`, `04-tickets/` |
 | 5 · Orchestrate | `using-git-worktrees` + `subagent-driven-development` (workspace setup, model tiering) — see the executor contract, Section 7 | `05-orchestrate.md` |
 | 6 · Build | `subagent-driven-development`, `test-driven-development`, `verification-before-completion`, `systematic-debugging`, `implement` — **the only phase fully covered by existing skills; `WORKFLOW.md` says so of no other phase**. Plus `reviewing-embedded-plan-code` **before** transcribing any complete algorithmic code the plan wrote out — see below | `06-tasks/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
-| 7 · Review & Fix | `requesting-code-review`, `code-review`, `review-animations`, `security-review`, `receiving-code-review`, `subagent-driven-development` (fix loop) | `07-reviews/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
+| 7 · Review & Fix | `requesting-code-review`, `code-review`, `review-animations`, `impeccable` (`critique`/`audit` — general UI/UX craft and anti-generic patterns, complementing `review-animations`' motion-only scope), `security-review`, `receiving-code-review`, `subagent-driven-development` (fix loop) | `07-reviews/` (bridged from SDD's workspace under subagent-driven execution; written directly under Small tier's direct execution — Section 6) |
 | 8 · Integrate | `phases/08-integrate.md` | `08-integrate.md` |
 | 9 · Release | `phases/09-release.md` (invokes `finishing-a-development-branch` for the merge, first action after Gate 3) | `09-release.md` |
 | 10 · Learn | `phases/10-learn.md` + `writing-skills` (for procedural findings) | `10-retro.md` |
@@ -173,6 +173,24 @@ API. That version does not get thrown away — it gets extended, and its
 fake-data shortcuts ship. The deliverable is the list of requirements the
 prototype exposed, written into `02-design.md` and carried to Gate 1; the
 prototype itself is deleted before Phase 3 begins.
+
+**Settle craft direction before building variants, not after.** `impeccable`
+and the taste skills are normal Skill-tool invocations — neither is on the
+read-not-invoke list in Section 2 — so run `impeccable`'s `shape` (a
+discovery brief; it writes no code and defers visual-world choice to
+`new-work`) and then `new-work` itself to pick the visual world, before the
+prototype's variants are built. Load `craft-floor.md` immediately before
+building any of them. Pick the taste skill that actually supplies the
+palette/type/motion rules for that world: default to
+`leonxlnx/design-taste-frontend`, which infers a direction from the brief
+rather than imposing one; swap in a named archetype skill instead
+(`minimalist-ui`, `industrial-brutalist-ui`, `high-end-visual-design`, and
+the rest of the `leonxlnx` collection) when the user asks for a specific
+look. This is what makes the live-picker mode (Section 3 above) show real,
+considered design rather than generic AI defaults — the whole reason to run
+it before committing to a spec. Record the chosen world and taste skill in
+`02-design.md`; Phase 3's craft pass and Phase 7's craft review both reuse
+it rather than re-deciding it.
 
 **Plan-embedded code is unreviewed code.** When `04-plan.md` writes out
 complete, non-trivial algorithmic implementation — a parser, a state

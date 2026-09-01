@@ -16,9 +16,11 @@ This phase writes three artifacts to the run directory:
 
 Phase 3's other two stages — UX/UI/motion design and dependency selection —
 are ✅ covered by existing skills (`emil-design-eng`, `apple-design`,
-`ui-ux-pro-max`, `pick-ui-library`) and are routed there directly by
-`SKILL.md`'s delegation table, not by this file. This file scopes to the
-three ❌ stages plus the functional spec.
+`ui-ux-pro-max`, `impeccable` (`critique`/`polish` craft pass, same visual
+direction and taste skill Phase 2 recorded in `02-design.md`),
+`pick-ui-library`) and are routed there directly by `SKILL.md`'s delegation
+table, not by this file. This file scopes to the three ❌ stages plus the
+functional spec.
 
 ---
 
