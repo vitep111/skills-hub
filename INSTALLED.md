@@ -70,6 +70,24 @@ skill came from. Path column below is relative to the repo root.
 |---|---|---|---|
 | impeccable | `skills/pbakaus/impeccable` | Design language and craft system that gives out-of-distribution UI/UX quality: shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, and more, across websites, dashboards, product UI, and components. Use when designing, redesigning, or reviewing any frontend interface. | 2026-09-01 |
 
+## leonxlnx — https://github.com/Leonxlnx/taste-skill
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| design-taste-frontend | `skills/leonxlnx/design-taste-frontend` | Anti-slop frontend skill (v2, experimental) for landing pages, portfolios, and redesigns — infers design direction from the brief and ships interfaces that don't look templated. The current default taste skill. | 2026-09-01 |
+| design-taste-frontend-v1 | `skills/leonxlnx/design-taste-frontend-v1` | Original v1 of the taste skill, preserved for projects depending on its exact behavior. Use only for backward compatibility with v1. | 2026-09-01 |
+| industrial-brutalist-ui | `skills/leonxlnx/industrial-brutalist-ui` | Raw mechanical interfaces fusing Swiss typographic print with military terminal aesthetics — rigid grids, extreme type contrast, analog degradation. For data-heavy dashboards, portfolios, or editorial sites. | 2026-09-01 |
+| minimalist-ui | `skills/leonxlnx/minimalist-ui` | Clean editorial-style interfaces: warm monochrome palette, typographic contrast, flat bento grids, muted pastels. No gradients, no heavy shadows. | 2026-09-01 |
+| high-end-visual-design | `skills/leonxlnx/high-end-visual-design` | Design like a high-end agency — exact fonts, spacing, shadows, card structures, and animations that make a website feel expensive; blocks common cheap/generic AI-design defaults. | 2026-09-01 |
+| redesign-existing-projects | `skills/leonxlnx/redesign-existing-projects` | Upgrades existing websites/apps to premium quality — audits current design, identifies generic AI patterns, applies high-end standards without breaking functionality. Works with any CSS framework. | 2026-09-01 |
+| brandkit | `skills/leonxlnx/brandkit` | Premium brand-kit image generation — brand-guidelines boards, logo systems, identity decks, visual-world presentations across minimalist, cinematic, editorial, luxury, and other brand systems. | 2026-09-01 |
+| stitch-design-taste | `skills/leonxlnx/stitch-design-taste` | Semantic design-system skill for Google Stitch — generates agent-friendly DESIGN.md files enforcing premium, anti-generic UI standards. | 2026-09-01 |
+| imagegen-frontend-web | `skills/leonxlnx/imagegen-frontend-web` | Elite frontend image-direction skill for premium, conversion-aware website design references — one image per section, composition variety, consistent palette. Generates images only. | 2026-09-01 |
+| imagegen-frontend-mobile | `skills/leonxlnx/imagegen-frontend-mobile` | Elite mobile app image-generation skill for premium, app-native screen concepts across iOS/Android/cross-platform. Generates images only. | 2026-09-01 |
+| image-to-code | `skills/leonxlnx/image-to-code` | Elite image-to-code skill for Codex — generates design images first, analyzes them deeply, then implements the website to match closely. | 2026-09-01 |
+| gpt-taste | `skills/leonxlnx/gpt-taste` | Elite UX/UI & GSAP motion skill enforcing AIDA structure, wide editorial typography, gapless bento grids, strict ScrollTrigger usage, and massive section spacing. | 2026-09-01 |
+| full-output-enforcement | `skills/leonxlnx/full-output-enforcement` | Overrides default LLM truncation — enforces complete code generation, bans placeholder patterns, handles token-limit splits cleanly. Apply to any task requiring exhaustive, unabridged output. | 2026-09-01 |
+
 ## vitep — authored in this hub
 
 | Skill Name | Path | Description | Last Updated |
