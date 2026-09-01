@@ -64,6 +64,12 @@ skill came from. Path column below is relative to the repo root.
 | writing-plans | `skills/obra/writing-plans` | Use when you have a spec or requirements for a multi-step task, before touching code. | 2026-08-03 |
 | writing-skills | `skills/obra/writing-skills` | Use when creating new skills, editing existing skills, or verifying skills work before deployment. | 2026-08-03 |
 
+## pbakaus — https://github.com/pbakaus/impeccable
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| impeccable | `skills/pbakaus/impeccable` | Design language and craft system that gives out-of-distribution UI/UX quality: shape, critique, audit, polish, clarify, distill, harden, optimize, adapt, animate, colorize, extract, and more, across websites, dashboards, product UI, and components. Use when designing, redesigning, or reviewing any frontend interface. | 2026-09-01 |
+
 ## vitep — authored in this hub
 
 | Skill Name | Path | Description | Last Updated |
