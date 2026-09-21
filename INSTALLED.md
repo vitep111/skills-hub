@@ -88,6 +88,12 @@ skill came from. Path column below is relative to the repo root.
 | gpt-taste | `skills/leonxlnx/gpt-taste` | Elite UX/UI & GSAP motion skill enforcing AIDA structure, wide editorial typography, gapless bento grids, strict ScrollTrigger usage, and massive section spacing. | 2026-09-01 |
 | full-output-enforcement | `skills/leonxlnx/full-output-enforcement` | Overrides default LLM truncation — enforces complete code generation, bans placeholder patterns, handles token-limit splits cleanly. Apply to any task requiring exhaustive, unabridged output. | 2026-09-01 |
 
+## anthropics — https://github.com/anthropics/skills
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| frontend-design | `skills/anthropics/frontend-design` | Anthropic's guidance for distinctive, intentional visual design when building new UI or reshaping an existing one — grounds aesthetic direction in the subject matter, plans a compact token system (color, type, layout) and reviews it against the brief before coding, and avoids the common AI-generated tells. | 2026-09-21 |
+
 ## vitep — authored in this hub
 
 | Skill Name | Path | Description | Last Updated |
