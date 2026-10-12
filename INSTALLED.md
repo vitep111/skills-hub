@@ -94,6 +94,12 @@ skill came from. Path column below is relative to the repo root.
 |---|---|---|---|
 | frontend-design | `skills/anthropics/frontend-design` | Anthropic's guidance for distinctive, intentional visual design when building new UI or reshaping an existing one — grounds aesthetic direction in the subject matter, plans a compact token system (color, type, layout) and reviews it against the brief before coding, and avoids the common AI-generated tells. | 2026-09-21 |
 
+## cathrynlavery — https://github.com/cathrynlavery/diagram-design
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| diagram-design | `skills/cathrynlavery/diagram-design` | Editorial diagram design: 44 diagram types (architecture, flowchart, sequence, state machine, swimlane, ER, Gantt, Sankey, charts and more) as self-contained HTML + inline SVG, with a skinnable style guide and draw.io / Mermaid / Excalidraw import. No shadows, no Mermaid slop. | 2026-10-12 |
+
 ## vitep — authored in this hub
 
 | Skill Name | Path | Description | Last Updated |
