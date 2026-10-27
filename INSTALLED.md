@@ -108,6 +108,12 @@ skill came from. Path column below is relative to the repo root.
 | ultracave | `skills/juliusbrussee/ultracave` | Caveman at maximum compression: fragments, one word when one word is enough. Explicit invocation only (`/ultracave` or `/caveman ultra`). | 2026-10-12 |
 | megacave | `skills/juliusbrussee/megacave` | Caveman in Classical Chinese (文言文), technical terms verbatim. Explicit invocation only (`/megacave` or `/caveman wenyan`). | 2026-10-12 |
 
+## ayghri — https://github.com/ayghri/i-have-adhd
+
+| Skill Name | Path | Description | Last Updated |
+|---|---|---|---|
+| i-have-adhd | `skills/ayghri/i-have-adhd` | Shapes output for a reader with ADHD: lead with the next action, number multi-step work, restate state across turns, suppress tangents, give specific time estimates, make wins visible. Explicit invocation only (`/i-have-adhd`); stays on until "stop adhd mode". | 2026-10-27 |
+
 ## vitep — authored in this hub
 
 | Skill Name | Path | Description | Last Updated |
